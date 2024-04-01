@@ -32,7 +32,7 @@ int main() {
         return -1;
     }
     for (int i = 0; i < n_objs; i ++){
-        printf("(%s, \"%s\")\n", get_type_name(&objs[i]),(char *) objs[i].value);
+        printf("(%s, \"%s\")\n", get_type_name(&objs[i]), (char *) objs[i].value);
     }
     return 0;
 }

@@ -23,9 +23,9 @@ int main() {
     destroyTrie(tree);
 
     auto const table = newActionTable();
-    printf("action of \"accc\" in status 12 is: 0x%llx\n", getAction(table, 12, "accc"));
+    printf("action of \"accc\" in status 12 is: 0x%lx\n", getAction(table, 12, "accc"));
     setAction(table, 0, "accc", makeAction(reject, 12LL));
-    printf("action of \"accc\" in status 0 is: 0x%llx\n", getAction(table, 0, "accc"));
+    printf("action of \"accc\" in status 0 is: 0x%lx\n", getAction(table, 0, "accc"));
     destroyActionTable(table);
     return 0;
 }

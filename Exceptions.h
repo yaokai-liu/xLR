@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 
-enum __BNF_ERROR_CODE_ENUM__ : uint32_t {
+enum __BNF_ERROR_CODE_ENUM__ : uint32_t { // NOLINT(*-reserved-identifier)
     NO_ERROR = 0,
     UNEXPECTED_OBJECT,
     UNKNOWN_SYMBOL,

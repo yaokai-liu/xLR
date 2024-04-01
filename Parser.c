@@ -60,38 +60,38 @@ typedef struct {
 } ExtRule;
 
 static const char * const BNF_TOKEN_NAMES[] = {
-    [__END__] = nullptr,
-    [IDENTIFIER] = "IDENTIFIER",
-    [LITERAL] = "LITERAL",
-    [ASSIGNER] = "ASSIGNER",
-    [APPENDER] = "APPENDER",
-    [SPLITER] = "SPLITER",
-    [BEGIN_GROUP] = "BEGIN_GROUP",
-    [END_GROUP] = "END_GROUP",
-    [CLOSURE] = "CLOSURE",
-    [POSURE] = "POSURE",
-    [BOOLURE] = "BOOLURE",
-    [EOL] = "EOL",
-    [DISCARD] = "DISCARD",
-    [DESTROY] = "DESTROY",
+    [__END__]       = nullptr,
+    [IDENTIFIER]    = "IDENTIFIER",
+    [LITERAL]       = "LITERAL",
+    [ASSIGNER]      = "ASSIGNER",
+    [APPENDER]      = "APPENDER",
+    [SPLITER]       = "SPLITER",
+    [BEGIN_GROUP]   = "BEGIN_GROUP",
+    [END_GROUP]     = "END_GROUP",
+    [CLOSURE]       = "CLOSURE",
+    [POSURE]        = "POSURE",
+    [BOOLURE]       = "BOOLURE",
+    [EOL]           = "EOL",
+    [DISCARD]       = "DISCARD",
+    [DESTROY]       = "DESTROY",
 };
 
 
 static uint32_t (* const BNF_LEX_RULES[])(const char * input, Object * obj) = {
-        [__END__] = nullptr,
-        [IDENTIFIER] = t_IDENTIFIER,
-        [ASSIGNER] = t_ASSIGNER,
-        [APPENDER] = t_APPENDER,
-        [LITERAL] = t_LITERAL,
-        [SPLITER] = t_SPLITER,
-        [BEGIN_GROUP] = t_BEGIN_GROUP,
-        [END_GROUP] = t_END_GROUP,
-        [CLOSURE] = t_CLOSURE,
-        [POSURE] = t_POSURE,
-        [BOOLURE] = t_BOOLURE,
-        [EOL] = t_EOL,
-        [DISCARD] = t_DISCARD,
-        [DESTROY] = t_DESTROY,
+        [__END__]       = nullptr,
+        [IDENTIFIER]    = t_IDENTIFIER,
+        [ASSIGNER]      = t_ASSIGNER,
+        [APPENDER]      = t_APPENDER,
+        [LITERAL]       = t_LITERAL,
+        [SPLITER]       = t_SPLITER,
+        [BEGIN_GROUP]   = t_BEGIN_GROUP,
+        [END_GROUP]     = t_END_GROUP,
+        [CLOSURE]       = t_CLOSURE,
+        [POSURE]        = t_POSURE,
+        [BOOLURE]       = t_BOOLURE,
+        [EOL]           = t_EOL,
+        [DISCARD]       = t_DISCARD,
+        [DESTROY]       = t_DESTROY,
 };
 
 uint32_t lex(const char * const input, Object * const obj) {
@@ -166,7 +166,6 @@ uint32_t t_IDENTIFIER(const char *const input, Object * const obj) {
         if ('9' < *sp && *sp < 'A') { break; }
         sp ++;
     }
-    if (*(sp - 1) == ':') { return 0; }
 
     obj->typeid = IDENTIFIER;
     obj->length = sp - input;
@@ -235,8 +234,9 @@ uint32_t pass_space(const char * const input, uint32_t * const lineno, uint32_t 
 #define ALLOC_SIZE 32
 uint32_t tokenize(const char * const input, Object *objs[], size_t *const n_objs,
                   uint32_t *const lineno, uint32_t *const column, const char * const filename) {
-    uint32_t l = lineno ? *lineno : 0; uint32_t c = column ? *column : 0;
     const char * sp = input;
+    uint32_t l = lineno ? *lineno : 0;
+    uint32_t c = column ? *column : 0;
     uint32_t length = ALLOC_SIZE, used_len = 0;
     Object * obj_array = malloc(sizeof(Object) * length);
     sp += pass_space(sp, &l, &c);
