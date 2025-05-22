@@ -31,17 +31,21 @@
 
 typedef enum SYMBOL_TYPE_ENUM : uint8_t {
   EMPTY,
+  BAD_TOKEN,
   TERMINATOR,
   TERMINAL,
   NON_TERMINAL,
 } symtype;
 typedef enum ACT_ENUM : uint8_t {
   STACK = 1,
-  REDUCE = 2
+  REDUCE = 2,
+  TRANSFORM = 3,
 } acttype;
 
+typedef INDEX(Symbol) trans_t(INDEX(Symbol));
+
 typedef struct RulePair {
-  bool        enabled;
+  bool enabled;
   INDEX(Rule) rule;
 } RulePair;  // Pair<bool, INDEX(Rule)>
 
@@ -51,7 +55,7 @@ typedef struct EnvPair {
 } EnvPair;  // Pair<INDEX(State), INDEX(Terminal)>
 
 typedef struct UsePair {
-  uint32_t       count;
+  uint32_t count;
   INDEX(AVLTree) tree;
 } UsePair;  // Pair<count, INDEX(AVLTree<INDEX(rule), bool>)>
 
@@ -72,6 +76,7 @@ typedef struct State {
    * AVLTree<INDEX(Symbol), REFER(Action)>
    */
   AVLTree *actions;
+  trans_t *fn_convert;
 } State;
 
 typedef struct Symbol {
@@ -107,7 +112,7 @@ typedef struct Symbol {
 typedef struct Rule {
   Array *items;  // Array<INDEX(Symbol)>
   INDEX(Symbol) target;
-  bool  enabled;
+  bool enabled;
 } Rule;
 
 typedef struct LrItem {
@@ -178,9 +183,6 @@ typedef struct LrItem {
     }                                                     \
   } while (false)
 
-#define Action_toUint64(act)   ((((uint64_t) (act).acttype) << 32) | ((act).index))
-#define Action_fromUint64(u64) {.acttype = (u64) >> 32, .index = ((u64) | 0xFFFFFFFF)}
-
 void Symbol_update_first_set(LRContext *context, INDEX(Symbol) i_sym, const Rule *rule, uint64_t enable);
 void Symbol_set_env(const LRContext *context, INDEX(Symbol) i_sym, const LrItem *item, uint64_t enable);
 
@@ -194,7 +196,6 @@ Action *State_set_reduce_action(LRContext *context, State *state, const LrItem *
 Action *State_set_stack_action(LRContext *context, State *state, INDEX(Symbol) i_sym);
 
 uint32_t LRContext_add_rule(LRContext *context, INDEX(Rule) i_rule);
-
 
 int32_t Action_cmp(const Action *a, const Action *b) {
   return (a->acttype == b->acttype) ? (int32_t) (a->index - b->index) : (int32_t) (a->acttype - b->acttype);
@@ -239,22 +240,22 @@ inline void Symbol_update_first_set(LRContext *context, INDEX(Symbol) i_sym, con
       if (using) {context->error = XLR_ERROR_MULTI_EMPTY_RULE; return; }
       UsePair new_using = { };
       new_using.count = 1;
-      new_using.tree = -1; // TODO: if debug enable, create a new AVLTree here.
+      new_using.tree = -1;  // TODO: if debug enable, create a new AVLTree here.
       Dict_set(sym->first_set, &follow, &new_using);
     });
   } else {
     INDEX(Symbol) first = *(INDEX(Symbol) *) Array_first_real(rule->items);
     const Symbol *first_sym = Array_real_addr(context->sym_array, first);
     if (first_sym->symtype == TERMINAL) {
-      UsePair new_using = { .count = 0, .tree = -1 }; // TODO: if debug enable, create a new AVLTree here.
+      UsePair new_using = {.count = 0, .tree = -1};  // TODO: if debug enable, create a new AVLTree here.
       Dict_set(sym->first_set, &first, &new_using);
     } else {
       Dict_foreach_key(INDEX(Symbol), UsePair, first_sym->first_set, {
         UsePair *using = Dict_get(sym->first_set, __key);
         if (!using) {
-          UsePair new_using = { };
+          UsePair new_using = {};
           new_using.count = 0;
-          new_using.tree = -1; // TODO: if debug enable, create a new AVLTree here.
+          new_using.tree = -1;  // TODO: if debug enable, create a new AVLTree here.
           Dict_set(sym->first_set, __key, &new_using);
           using = Dict_get(sym->envs, __key);
         }
@@ -270,10 +271,10 @@ inline void Symbol_set_env(const LRContext *context, INDEX(Symbol) i_sym, const 
   INDEX(Symbol) look = LrItem_ahead(context, item);
   const Symbol *look_sym = Array_real_addr(context->sym_array, look);
   if (look_sym->symtype == TERMINAL) {
-    EnvPair pair = { .state = item->state, .follow = look };
+    EnvPair pair = {.state = item->state, .follow = look};
     UsePair *using = Dict_get(sym->envs, &pair);
     if (!using) {
-      UsePair new_using = { .count = 0, .tree = -1 }; // TODO: if debug enable, create a new AVLTree here.
+      UsePair new_using = {.count = 0, .tree = -1};  // TODO: if debug enable, create a new AVLTree here.
       Dict_set(sym->envs, &pair, &new_using);
       using = Dict_get(sym->envs, &pair);
     }
@@ -281,14 +282,14 @@ inline void Symbol_set_env(const LRContext *context, INDEX(Symbol) i_sym, const 
     // TODO: if debug enable, set rule's flag in `using->tree`.
   } else {
     Dict_foreach_key(INDEX(Symbol), UsePair, look_sym->first_set, {
-      EnvPair pair = { };
+      EnvPair pair = {};
       pair.state = item->state;
       pair.follow = *__key;
       UsePair *using = Dict_get(sym->envs, &pair);
       if (!using) {
-        UsePair new_using = { };
+        UsePair new_using = {};
         new_using.count = 0;
-        new_using.tree = -1; // TODO: if debug enable, create a new AVLTree here.
+        new_using.tree = -1;  // TODO: if debug enable, create a new AVLTree here.
         Dict_set(sym->envs, &pair, &new_using);
         using = Dict_get(sym->envs, &pair);
       }
@@ -317,13 +318,13 @@ inline INDEX(Symbol) LrItem_ahead(const LRContext *context, const LrItem *item) 
 inline void LrItem_build_closure(const LRContext *context, Array *item_array) {
   uint32_t old_item_count = 0, new_item_count = Array_length(item_array);
   while (new_item_count > old_item_count) {
-    for (uint32_t i = old_item_count; i < new_item_count; i ++) {
-      const LrItem *const item = Array_real_addr(item_array, i);
+    for (uint32_t i = old_item_count; i < new_item_count; i++) {
+      const LrItem * const item = Array_real_addr(item_array, i);
       const INDEX(Symbol) cur_sym_index = LrItem_current(context, item);
-      const Symbol *const cur_sym = Array_real_addr(context->sym_array, cur_sym_index);
+      const Symbol * const cur_sym = Array_real_addr(context->sym_array, cur_sym_index);
       if (cur_sym->symtype == NON_TERMINAL) {
         INDEX(Symbol) look = LrItem_ahead(context, item);
-        LrItem sub_item = { .state = item->state, .look = look, .pos = 0 };
+        LrItem sub_item = {.state = item->state, .look = look, .pos = 0};
         Array_foreach(RulePair, cur_sym->pop_rules, {
           if (!__element->enabled) { continue; }
           sub_item.rule = __element->rule;
@@ -373,7 +374,7 @@ inline Action *State_set_stack_action(LRContext *context, State *state, INDEX(Sy
 inline void LRContext_enumerate_items(LRContext *context, const INDEX(Rule) i_rule, Array *item_array) {
   const Rule * const rule = Array_real_addr(context->rule_array, i_rule);
   Symbol *target = Array_real_addr(context->sym_array, rule->target);
-  LrItem item = { .rule = i_rule, .pos = 0 };
+  LrItem item = {.rule = i_rule, .pos = 0};
   Dict_foreach_key(EnvPair, AVLTree, target->envs, {
     item.state = __key->state;
     item.look = __keys->follow;
@@ -385,7 +386,7 @@ inline void LRContext_enumerate_items(LRContext *context, const INDEX(Rule) i_ru
 inline uint32_t LRContext_set_rule(LRContext *context, const INDEX(Rule) i_rule, uint64_t enable_flag) {
   enable_flag = enable_flag ? 1 : 0;
   const uint32_t action_flag = enable_flag ? 1 : -1;
-  Rule *const rule = Array_real_addr(context->rule_array, i_rule);
+  Rule * const rule = Array_real_addr(context->rule_array, i_rule);
   if (rule->enabled == enable_flag) {
     context->error = XLR_ERROR_DUPLICATED_SET_RULE;
     return context->error;
@@ -408,10 +409,10 @@ inline uint32_t LRContext_set_rule(LRContext *context, const INDEX(Rule) i_rule,
       const INDEX(Symbol) i_cur_sym = LrItem_current(context, item);
       Action *action = State_set_stack_action(context, state, i_cur_sym);
       if (!action) { return context->error; }
-      LrItem next_item = { .state = action->index, .rule = item->rule, .look = item->look, .pos = item->pos + 1 };
+      LrItem next_item = {.state = action->index, .rule = item->rule, .look = item->look, .pos = item->pos + 1};
       Array_append(next_item_array, &next_item, 1);
       action->using.count += action_flag;
-      LrItem use_item = { .state = item->state, .rule = i_rule, .look = item->look, .pos = 0 };
+      LrItem use_item = {.state = item->state, .rule = i_rule, .look = item->look, .pos = 0};
       Symbol_set_env(context, i_cur_sym, &use_item, enable_flag);
     }
     releasePrimeArray(item_array);

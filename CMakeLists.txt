@@ -22,4 +22,5 @@ aux_source_directory(meman MEMAN_SRC)
 add_library(meman STATIC ${MEMAN_SRC})
 link_libraries(meman)
 
-add_library(xLR STATIC LRContext.c LRContext.h)
+add_library(xLR STATIC
+        LRContext.c LRContext.h)

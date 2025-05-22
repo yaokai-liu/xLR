@@ -25,12 +25,12 @@
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef XLR_INTEGRATE_INTEGRATE_H
-#define XLR_INTEGRATE_INTEGRATE_H
+#ifndef XLR_LR_CONTEXT_H
+#define XLR_LR_CONTEXT_H
 
 #include "array.h"
-#include "set.h"
 #include "avl-tree.h"
+#include "set.h"
 
 enum XLR_ERROR_CODE_ENUM {
   SUCCESS,
@@ -73,4 +73,4 @@ typedef struct UsePair UsedPair;  // Pair<count, INDEX(AVLTree)>
 int32_t Action_cmp(const Action *a, const Action *b);
 uint64_t EnvPair_hash(const EnvPair *pair);
 
-#endif  // XLR_INTEGRATE_INTEGRATE_H
+#endif  // XLR_LR_CONTEXT_H
