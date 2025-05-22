@@ -16,11 +16,12 @@ if (ENABLE_GPROF)
     add_compile_options("-pg")
     add_link_options("-pg")
 endif ()
-
-include_directories(meman)
-aux_source_directory(meman MEMAN_SRC)
-add_library(meman STATIC ${MEMAN_SRC})
-link_libraries(meman)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    include_directories(meman)
+    aux_source_directory(meman MEMAN_SRC)
+    add_library(meman STATIC ${MEMAN_SRC})
+    link_libraries(meman)
+endif ()
 
 add_library(xLR STATIC
         LRContext.c LRContext.h)

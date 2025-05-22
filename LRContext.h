@@ -43,11 +43,6 @@ enum XLR_ERROR_CODE_ENUM {
   XLR_ERROR_MULTI_EMPTY_RULE,
 };
 
-typedef struct Action Action;
-typedef struct State State;
-typedef struct Symbol Symbol, Terminal, NonTerminal;
-typedef struct LrItem LrItem;
-typedef struct Rule Rule;
 enum XLR_TYPE_ENUM {
   XLR_TYPE_SYMBOL = 1,
   XLR_TYPE_RULE = 2,
@@ -56,21 +51,28 @@ enum XLR_TYPE_ENUM {
   XLR_TYPE_ACTION = 5,
 };
 
+typedef struct LRAction LRAction;
+typedef struct LRState LRState;
+typedef struct LRSymbol LRSymbol, LRTerminal, LRNonTerminal;
+typedef struct LRItem LRItem;
+typedef struct LRRule LRRule;
 #define INDEX(o) uint32_t
 
 typedef struct LRContext {
   const Allocator *allocator;
-  Array *sym_array;  // Array<Symbol>
-  Array *rule_array;  // Array<Rule>
-  Array *state_array;  // Array<State>
+  Array *sym_array;  // Array<LRSymbol>
+  Array *rule_array;  // Array<LRRule>
+  Array *state_array;  // Array<LRState>
   uint32_t error;
 } LRContext;
 
-typedef struct RulePair RulePair;  // Pair<bool, INDEX(Rule)>
-typedef struct EnvPair EnvPair;  // Pair<INDEX(State), INDEX(Terminal)>
-typedef struct UsePair UsedPair;  // Pair<count, INDEX(AVLTree)>
+typedef struct LRRulePair LRRulePair;  // Pair<bool, INDEX(LRRule)>
+typedef struct LREnvPair LREnvPair;  // Pair<INDEX(LRState), INDEX(Terminal)>
+typedef struct LRUsePair LRUsePair;  // Pair<count, INDEX(AVLTree)>
 
-int32_t Action_cmp(const Action *a, const Action *b);
-uint64_t EnvPair_hash(const EnvPair *pair);
+int32_t Action_cmp(const LRAction *a, const LRAction *b);
+uint64_t EnvPair_hash(const LREnvPair *pair);
+
+uint32_t LRContext_set_rule(LRContext *context, INDEX(Rule) i_rule, uint64_t enable_flag);
 
 #endif  // XLR_LR_CONTEXT_H
