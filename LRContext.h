@@ -67,12 +67,12 @@ typedef struct LRContext {
 } LRContext;
 
 typedef struct LRRulePair LRRulePair;  // Pair<bool, INDEX(LRRule)>
-typedef struct LREnvPair LREnvPair;  // Pair<INDEX(LRState), INDEX(Terminal)>
+typedef struct LREnvPair LREnvPair;  // Pair<INDEX(LRState), INDEX(LRTerminal)>
 typedef struct LRUsePair LRUsePair;  // Pair<count, INDEX(AVLTree)>
 
-int32_t Action_cmp(const LRAction *a, const LRAction *b);
-uint64_t EnvPair_hash(const LREnvPair *pair);
+int32_t LRAction_cmp(const LRAction *a, const LRAction *b);
+uint64_t LREnvPair_hash(const LREnvPair *pair);
 
-uint32_t LRContext_set_rule(LRContext *context, INDEX(Rule) i_rule, uint64_t enable_flag);
+uint32_t LRContext_set_rule(LRContext *context, INDEX(LRRule) i_rule, uint64_t enable_flag);
 
 #endif  // XLR_LR_CONTEXT_H
