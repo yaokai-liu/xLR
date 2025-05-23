@@ -44,16 +44,21 @@ enum XLR_ERROR_CODE_ENUM {
 };
 
 enum XLR_TYPE_ENUM {
-  XLR_TYPE_SYMBOL = 1,
-  XLR_TYPE_RULE = 2,
-  XLR_TYPE_ITEM = 3,
-  XLR_TYPE_STATE = 4,
-  XLR_TYPE_ACTION = 5,
+  XLR_TYPE_BAD_TYPE = 0,
+  XLR_TYPE_SYMBOL,
+  XLR_TYPE_RULE,
+  XLR_TYPE_ITEM,
+  XLR_TYPE_STATE,
+  XLR_TYPE_ACTION,
+  XLR_TYPE_RULE_KEY,
+  XLR_TYPE_ENV_KEY,
+  XLR_TYPE_USE_KEY,
+  XLR_TYPE_ACT_KEY,
 };
 
 typedef struct LRAction LRAction;
 typedef struct LRState LRState;
-typedef struct LRSymbol LRSymbol, LRTerminal, LRNonTerminal;
+typedef struct LRSymbol LRSymbol;
 typedef struct LRItem LRItem;
 typedef struct LRRule LRRule;
 #define INDEX(o) uint32_t
@@ -68,10 +73,11 @@ typedef struct LRContext {
 
 typedef struct LRRulePair LRRulePair;  // Pair<bool, INDEX(LRRule)>
 typedef struct LREnvPair LREnvPair;  // Pair<INDEX(LRState), INDEX(LRTerminal)>
-typedef struct LRUsePair LRUsePair;  // Pair<count, INDEX(AVLTree)>
+typedef struct LRActKeyPair LRActKeyPair;
 
 int32_t LRAction_cmp(const LRAction *a, const LRAction *b);
 uint64_t LREnvPair_hash(const LREnvPair *pair);
+uint64_t LRActKeyPair_hash(const LRActKeyPair *pair);
 
 uint32_t LRContext_set_rule(LRContext *context, INDEX(LRRule) i_rule, uint64_t enable_flag);
 
