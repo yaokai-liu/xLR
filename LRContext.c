@@ -26,116 +26,6 @@
  **/
 
 #include "LRContext.h"
-#include "avl-tree.h"
-#include "dict.h"
-
-typedef enum SYMBOL_TYPE_ENUM : uint8_t {
-  SYMTYPE_EMPTY,
-  SYMTYPE_BAD_TOKEN,
-  SYMTYPE_TERMINATOR,
-  SYMTYPE_TERMINAL,
-  SYMTYPE_NON_TERMINAL,
-} symtype;
-
-typedef enum ACTION_TYPE_ENUM : uint8_t {
-  ACTTYPE_REJECT,
-  ACTTYPE_STACK,
-  ACTTYPE_REDUCE,
-  ACTTYPE_REPEAT,
-} acttype;
-
-typedef enum STATE_TYPE_ENUM : uint8_t {
-  STATYPE_NORMAL,
-  STATYPE_REPEAT,
-} statype;
-
-typedef INDEX(LRSymbol) trans_t(INDEX(LRSymbol));
-
-typedef struct LRRulePair {
-  bool enabled;
-  INDEX(LRRule) rule;
-} LRRulePair;  // Pair<bool, INDEX(LRRule)>
-
-typedef struct LREnvPair {
-  // state that will accept the symbol (or rule)
-  INDEX(LRState) state;
-  // symbols that after the symbol (or rule) in the state
-  INDEX(LRTerminal) follow;
-} LREnvPair;
-
-typedef struct LRActKeyPair {
-  // the symbol determines the action
-  INDEX(LRTerminal) symbol;
-  // other info to distinguish same symbol according the state
-  uint32_t      key_info;
-} LRActKeyPair;
-
-typedef struct LRAction {
-  acttype acttype;
-  // rules that rules this action
-  Set * rules;
-  /*
-   * if acttype:
-   * is ACTTYPE_STACK:        next state index;
-   * is ACTTYPE_REDUCE:       reduce rule index;
-   * is TRANSFORM:    target symbol index;
-   */
-  uint32_t index;
-} LRAction;
-
-typedef struct LRState {
-  statype  type;
-  uint32_t count;
-  uint32_t index;
-  /*
-   * Dict<LRActKeyPair, REFER(LRAction)>
-   */
-  Dict *actions;
-  trans_t *fn_convert;
-} LRState;
-
-typedef struct LRSymbol {
-  symtype symtype;
-  /*
-   * if symtype:
-   * is EMPTY:          EMPTY;
-   * is TERMINATOR:     TERMINATOR;
-   * otherwise:         offset in sym_array.
-   */
-  uint32_t index;
-  /*
-   * if symtype
-   * is SYMTYPE_NON_TERMINAL:   Array<LRRulePair>;
-   * otherwise:         nullptr.
-   */
-  Array *pop_rules;
-  /*
-   * if symtype
-   * is SYMTYPE_NON_TERMINAL:   Dict<LRTerminal, Set>;
-   * otherwise:         nullptr.
-   */
-  Dict *first_set;
-  /*
-   * if symtype
-   * is SYMTYPE_TERMINAL:       Dict<LREnvPair, Set>;
-   * is SYMTYPE_NON_TERMINAL:   Dict<LREnvPair, Set>;
-   * otherwise:         nullptr.
-   */
-  Dict *envs;
-} LRSymbol, LRTerminal;
-
-typedef struct LRRule {
-  Array *items;  // Array<INDEX(LRSymbol)>
-  INDEX(LRSymbol) target;
-  bool enabled;
-} LRRule;
-
-typedef struct LRItem {
-  INDEX(LRState) state;
-  INDEX(LRSymbol) look;
-  INDEX(LRRule) rule;
-  uint32_t pos;
-} LRItem;
 
 #define Array_foreach(type, _array, doing)              \
   do {                                                  \
@@ -198,8 +88,13 @@ typedef struct LRItem {
     }                                                     \
   } while (false)
 
+void LRSymbol_add_rule(LRContext *context, INDEX(LRSymbol) i_sym, INDEX(LRRule) i_rule, uint64_t enable);
 void LRSymbol_update_first_set(LRContext *context, INDEX(LRSymbol) i_sym, INDEX(LRRule) i_rule, uint64_t enable);
 void LRSymbol_set_env(const LRContext *context, INDEX(LRSymbol) i_sym, const LRItem *item, uint64_t enable);
+void LRSymbol_release(LRSymbol *symbol, const Allocator *allocator);
+#define LRSymbol_new_envs() Dict_new(sizeof(LREnvPair), sizeof_set, \
+  (unikey_t *) LREnvPair_hash, XLR_TYPE_SYMBOL, context->allocator)
+
 
 bool LRItem_isEnd(const LRContext *context, const LRItem *item);
 void LRItem_build_closure(const LRContext *context, Array *item_array);
@@ -211,6 +106,10 @@ LRAction *
 LRState_set_reduce_action(LRContext *context, LRState *state, uint32_t key_info, const LRItem *item, uint64_t enable);
 LRAction *LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, INDEX(LRSymbol) i_sym,
                                    INDEX(LRRule) i_rule, uint64_t enable);
+void LRState_release(LRState *state, const Allocator *allocator);
+
+void LRAction_release(LRAction *action, const Allocator *allocator);
+void LRRule_release(LRRule *rule, const Allocator *allocator);
 
 int32_t LRAction_cmp(const LRAction *a, const LRAction *b) {
   return (a->acttype == b->acttype) ? (int32_t) (a->index - b->index) : (int32_t) (a->acttype - b->acttype);
@@ -226,8 +125,8 @@ uint64_t LRActKeyPair_hash(const LRActKeyPair *pair) {
 
 inline void LRSymbol_build_first_set(LRContext *context, INDEX(LRSymbol) i_sym) {
   LRSymbol *symbol = Array_real_addr(context->sym_array, i_sym);
-  Dict_reset(symbol->first_set);
-  Array_foreach(LRRulePair, symbol->pop_rules, {
+  Dict_reset(symbol->firsts);
+  Array_foreach(LRRulePair, symbol->rules, {
     if (!__element->enabled) { continue; }
     LRSymbol_update_first_set(context, i_sym, __element->rule, 0);
   });
@@ -252,24 +151,46 @@ inline void LRSymbol_build_first_set(LRContext *context, INDEX(LRSymbol) i_sym) 
   Dict_set((dict), first, rules);                               \
 } while (false)
 
+void LRSymbol_add_rule(LRContext *context, INDEX(LRSymbol) i_sym, INDEX(LRRule) i_rule, uint64_t enable) {
+  const Allocator *allocator = context->allocator;
+  LRSymbol *sym = Array_real_addr(context->sym_array, i_sym);
+  if (sym->symtype == SYMTYPE_TERMINAL) { sym->symtype = SYMTYPE_NON_TERMINAL; }
+  if (!sym->rules) { sym->rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator); }
+  else {
+    Array_foreach(LRRulePair, sym->rules, {
+      if (__element->rule == i_rule) {
+        __element->enabled = enable;
+        goto __changed_rule_enable;
+      }
+    });
+  }
+  LRRulePair pair = { .rule = i_rule, .enabled = enable };
+  Array_append(sym->rules, &pair, 1);
+  __changed_rule_enable:
+  if (!sym->firsts) {
+    sym->firsts = Dict_new(sizeof(INDEX(LRTerminal)), sizeof_set,
+                           nullptr, XLR_TYPE_SYMBOL, allocator);
+  }
+  LRSymbol_update_first_set(context, i_sym, i_rule, enable);
+}
+
 inline void LRSymbol_update_first_set(LRContext *context, const INDEX(LRSymbol) i_sym,
                                       const INDEX(LRRule) i_rule, uint64_t enable) {
-const LRRule *rule = Array_real_addr(context->rule_array, i_rule);
-  if (rule->target != i_sym) { context->error = XLR_ERROR_TARGET_MISMATCH; return; }
+  const LRRule *rule = Array_real_addr(context->rule_array, i_rule);
   LRSymbol *sym = Array_real_addr(context->sym_array, i_sym);
   if (!rule->items || Array_length(rule->items) == 0) {
     Dict_foreach_key(LREnvPair, AVLTree, sym->envs, {
       INDEX(LRTerminal) follow = __key->follow;
-      LRSymbol_add_using(sym->first_set, &follow, &i_rule);
+      LRSymbol_add_using(sym->firsts, &follow, &i_rule);
     });
   } else {
     INDEX(LRSymbol) first = *(INDEX(LRSymbol) *) Array_first_real(rule->items);
     const LRSymbol *first_sym = Array_real_addr(context->sym_array, first);
     if (first_sym->symtype == SYMTYPE_TERMINAL) {
-      LRSymbol_add_using(sym->first_set, &first, &i_rule);
+      LRSymbol_add_using(sym->firsts, &first, &i_rule);
     } else {
-      Dict_foreach_key(INDEX(LRSymbol), LRUsePair, first_sym->first_set, {
-        LRSymbol_add_using(sym->first_set, __key, &i_rule);
+      Dict_foreach_key(INDEX(LRSymbol), LRUsePair, first_sym->firsts, {
+        LRSymbol_add_using(sym->firsts, __key, &i_rule);
       });
     }
   }
@@ -283,7 +204,7 @@ inline void LRSymbol_set_env(const LRContext *context, INDEX(LRSymbol) i_sym, co
     LREnvPair pair = {.state = item->state, .follow = look};
     LRSymbol_add_using(sym->envs, &pair, &item->rule);
   } else {
-    Dict_foreach_key(INDEX(LRSymbol), LRUsePair, look_sym->first_set, {
+    Dict_foreach_key(INDEX(LRSymbol), LRUsePair, look_sym->firsts, {
       LREnvPair pair = {};
       pair.state = item->state;
       pair.follow = *__key;
@@ -294,7 +215,7 @@ inline void LRSymbol_set_env(const LRContext *context, INDEX(LRSymbol) i_sym, co
 
 inline bool LRItem_isEnd(const LRContext *context, const LRItem *item) {
   const LRRule * const rule = Array_real_addr(context->rule_array, item->rule);
-  return item->pos >= Array_length(rule->items);
+  return (!rule->items) || (item->pos >= Array_length(rule->items));
 }
 
 inline INDEX(LRSymbol) LRItem_current(const LRContext *context, const LRItem *item) {
@@ -318,7 +239,7 @@ inline void LRItem_build_closure(const LRContext *context, Array *item_array) {
       if (cur_sym->symtype == SYMTYPE_NON_TERMINAL) {
         INDEX(LRSymbol) look = LRItem_ahead(context, item);
         LRItem sub_item = {.state = item->state, .look = look, .pos = 0};
-        Array_foreach(LRRulePair, cur_sym->pop_rules, {
+        Array_foreach(LRRulePair, cur_sym->rules, {
           if (!__element->enabled) { continue; }
           sub_item.rule = __element->rule;
           Array_append(item_array, &sub_item, 1);
@@ -374,9 +295,51 @@ LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, 
   return action;
 }
 
+constexpr uint32_t SYM_INDEX_EMPTY = 0;
+constexpr uint32_t SYM_INDEX_TERMINATOR = 1;
+constexpr uint32_t SYM_INDEX_EXTEND = 2;
+
+const LRSymbol DEFAULT_SYMBOLS[] = {
+    { .symtype = SYMTYPE_EMPTY, .index = SYM_INDEX_EMPTY, .rules = nullptr, .firsts = nullptr, .envs = nullptr },
+    { .symtype = SYMTYPE_TERMINATOR, .index = SYM_INDEX_TERMINATOR, .rules = nullptr, .firsts = nullptr, .envs = nullptr }
+};
+
+LRContext *LRContext_new(const Allocator *allocator) {
+  LRContext *context = allocator->calloc(1, sizeof(LRContext));
+  context->allocator = allocator;
+  context->state_array = Array_new(sizeof(LRState), XLR_TYPE_STATE, allocator);
+  context->sym_array = Array_new(sizeof(LRSymbol), XLR_TYPE_SYMBOL, allocator);
+  context->ident_array = Array_new(sizeof(uint8_t), XLR_TYPE_CHAR, allocator);
+  context->rule_array = Array_new(sizeof(LRRule), XLR_TYPE_RULE, allocator);
+  context->sym_tree = AVLTree_new(allocator, nullptr);
+
+  Array_append(context->ident_array, "", 1);
+  const LRSymbol extend_symbol = {
+    .symtype = SYMTYPE_NON_TERMINAL, .index = SYM_INDEX_EXTEND,
+    .rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator),
+    .firsts = Dict_new(sizeof(INDEX(LRTerminal)), sizeof_set,
+                       nullptr, XLR_TYPE_SYMBOL, allocator),
+    .envs = LRSymbol_new_envs()
+  };
+  Array_append(context->sym_array, DEFAULT_SYMBOLS, 2);
+  Array_append(context->sym_array, &extend_symbol, 1);
+  return context;
+}
+
+void LRContext_destroy(LRContext *context) {
+  Array_reset(context->state_array, (destruct_t *) LRState_release);
+  Array_reset(context->sym_array, (destruct_t *) LRSymbol_release);
+  Array_reset(context->rule_array, (destruct_t *) LRRule_release);
+  AVLTree_destroy(context->sym_tree, nullptr);
+  Array_destroy(context->state_array);
+  Array_destroy(context->rule_array);
+  Array_destroy(context->sym_array);
+  releasePrimeArray(context->ident_array);
+}
+
 inline void LRContext_enumerate_items(LRContext *context, const INDEX(LRRule) i_rule, Array *item_array) {
   const LRRule * const rule = Array_real_addr(context->rule_array, i_rule);
-  LRSymbol *target = Array_real_addr(context->sym_array, rule->target);
+  const LRSymbol *target = Array_real_addr(context->sym_array, rule->target);
   LRItem item = {.rule = i_rule, .pos = 0};
   Dict_foreach_key(LREnvPair, AVLTree, target->envs, {
     item.state = __key->state;
@@ -411,9 +374,9 @@ inline uint32_t LRContext_set_rule(LRContext *context, const INDEX(LRRule) i_rul
       const INDEX(LRSymbol) i_cur_sym = LRItem_current(context, item);
       LRAction *action = LRState_set_stack_action(context, state, 0, i_cur_sym, i_rule, action_flag);
       if (!action) { return context->error; }
-      LRItem next_item = {.state = action->index, .rule = item->rule, .look = item->look, .pos = item->pos + 1};
+      const LRItem next_item = {.state = action->index, .rule = item->rule, .look = item->look, .pos = item->pos + 1};
       Array_append(next_item_array, &next_item, 1);
-      LRItem use_item = {.state = item->state, .rule = i_rule, .look = item->look, .pos = 0};
+      const LRItem use_item = {.state = item->state, .rule = i_rule, .look = item->look, .pos = 0};
       LRSymbol_set_env(context, i_cur_sym, &use_item, enable_flag);
     }
     releasePrimeArray(item_array);
@@ -421,8 +384,8 @@ inline uint32_t LRContext_set_rule(LRContext *context, const INDEX(LRRule) i_rul
     item_array = next_item_array;
   }
   releasePrimeArray(item_array);
-  LRSymbol_update_first_set(context, rule->target, i_rule, 0);
+  LRSymbol_add_rule(context, rule->target, i_rule, enable_flag);
   rule->enabled = enable_flag;
-  context->error = SUCCESS;
+  context->error = XLR_SUCCESS;
   return context->error;
 }

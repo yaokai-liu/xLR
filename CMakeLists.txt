@@ -16,12 +16,15 @@ if (ENABLE_GPROF)
     add_compile_options("-pg")
     add_link_options("-pg")
 endif ()
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+
+if (NOT TARGET meman)
     include_directories(meman)
     aux_source_directory(meman MEMAN_SRC)
     add_library(meman STATIC ${MEMAN_SRC})
     link_libraries(meman)
 endif ()
 
-add_library(xLR STATIC
-        LRContext.c LRContext.h)
+add_subdirectory(regex)
+
+add_library(xLR STATIC LRContext.c LRContext.h LRRuleParser.c LRRuleParser.h)
+target_include_directories(xLR PRIVATE regex/include)

@@ -1,3 +1,6 @@
 [submodule "meman"]
 	path = meman
 	url = git@github.com:yaokai-liu/meman.git
+[submodule "regex"]
+	path = regex
+	url = git@github.com:yaokai-liu/regex.git
