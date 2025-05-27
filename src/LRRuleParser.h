@@ -29,8 +29,8 @@
 #define XLR_LR_PARSER_H
 
 #include "LRContext.h"
-#include "regex.h"
+#include "regex/types.h"
 
-uint32_t LRRule_from_regex(LRContext *context, REFER(void) target, const Regex *regexp);
+INDEX(LRRule) LRContext_add_rules_from_regex(LRContext *context, const REFER(char_t) target, const Regex *regexp);
 
 #endif //XLR_LR_PARSER_H

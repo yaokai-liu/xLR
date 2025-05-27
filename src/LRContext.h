@@ -28,24 +28,14 @@
 #ifndef XLR_LR_CONTEXT_H
 #define XLR_LR_CONTEXT_H
 
+#include "xLR/error.h"
+#include "regex/xlr.h"
+#include "xLR/xlr.h"
 #include "array.h"
-#include "avl-tree.h"
-#include "set.h"
+#include "trie.h"
 #include "dict.h"
-
-enum XLR_ERROR_CODE_ENUM {
-  XLR_SUCCESS,
-  XLR_ERROR_SR_CONFLICT,
-  XLR_ERROR_RS_CONFLICT,
-  XLR_ERROR_RR_CONFLICT,
-
-  XLR_ERROR_TARGET_MISMATCH,
-  XLR_ERROR_DUPLICATED_SET_RULE,
-  XLR_ERROR_MULTI_EMPTY_RULE,
-
-  XLR_ERROR_BAD_QUANTIFIER,
-  XLR_ERROR_BAD_TOKEN,
-};
+#include "set.h"
+#include "avl-tree.h"
 
 enum XLR_TYPE_ENUM {
   XLR_TYPE_BAD_TYPE = 0,
@@ -60,13 +50,6 @@ enum XLR_TYPE_ENUM {
   XLR_TYPE_USE_KEY,
   XLR_TYPE_ACT_KEY,
 };
-
-typedef struct LRAction LRAction;
-typedef struct LRState LRState;
-typedef struct LRSymbol LRSymbol;
-typedef struct LRItem LRItem;
-typedef struct LRRule LRRule;
-#define INDEX(o) uint32_t
 
 typedef enum SYMBOL_TYPE_ENUM : uint8_t {
   SYMTYPE_BAD_TOKEN,
@@ -87,8 +70,6 @@ typedef enum STATE_TYPE_ENUM : uint8_t {
   STATYPE_NORMAL,
   STATYPE_REPEAT,
 } statype;
-
-typedef INDEX(LRSymbol) trans_t(INDEX(LRSymbol));
 
 typedef struct LRRulePair {
   bool enabled;
@@ -117,7 +98,7 @@ typedef struct LRAction {
    * if acttype:
    * is ACTTYPE_STACK:        next state index;
    * is ACTTYPE_REDUCE:       reduce rule index;
-   * is TRANSFORM:    target symbol index;
+   * is TRANSFORM:            target symbol index;
    */
   uint32_t index;
 } LRAction;
@@ -127,7 +108,7 @@ typedef struct LRState {
   uint32_t count;
   uint32_t index;
   /*
-   * Dict<LRActKeyPair, REFER(LRAction)>
+   * Dict<LRActKeyPair, LRAction>
    */
   Dict *actions;
   trans_t *fn_convert;
@@ -160,6 +141,10 @@ typedef struct LRSymbol {
   Dict *envs;
 } LRSymbol, LRTerminal;
 
+constexpr uint32_t SYM_INDEX_EMPTY = 0;
+constexpr uint32_t SYM_INDEX_TERMINATOR = 1;
+constexpr uint32_t SYM_INDEX_EXTEND = 2;
+
 typedef struct LRRule {
   Array *items;  // Array<INDEX(LRSymbol)>
   INDEX(LRSymbol) target;
@@ -175,11 +160,12 @@ typedef struct LRItem {
 
 typedef struct LRContext {
   const Allocator *allocator;
-  Array *ident_array; // Array<char_t>
-  AVLTree *sym_tree; // Array<REFER(char_t), REFER(LRSymbol)>
-  Array *sym_array;  // Array<LRSymbol>
-  Array *rule_array;  // Array<LRRule>
-  Array *state_array;  // Array<LRState>
+  Array *ident_array;   // Array<char_t>
+  Trie  *ident_trie;    // Trie<REFER(char_t)>
+  Array *sym_array;     // Array<LRSymbol>
+  AVLTree *sym_tree;    // AVLTree<REFER(char_t), REFER(LRSymbol)>
+  Array *rule_array;    // Array<LRRule>
+  Array *state_array;   // Array<LRState>
   uint32_t error;
 } LRContext;
 
@@ -191,8 +177,9 @@ int32_t LRAction_cmp(const LRAction *a, const LRAction *b);
 uint64_t LREnvPair_hash(const LREnvPair *pair);
 uint64_t LRActKeyPair_hash(const LRActKeyPair *pair);
 
-uint32_t LRContext_set_rule(LRContext *context, INDEX(LRRule) i_rule, uint64_t enable_flag);
-LRContext *LRContext_new(const Allocator *allocator);
-void LRContext_destroy(LRContext *context);
+void LRState_release(LRState *state, const Allocator *allocator);
+void LRAction_release(LRAction *action, const Allocator *allocator);
+void LRRule_release(LRRule *rule, const Allocator *allocator);
+void LRRuleSet_release(Set *set, const Allocator *allocator);
 
 #endif  // XLR_LR_CONTEXT_H

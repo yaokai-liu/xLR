@@ -3,6 +3,12 @@ project(xLR C)
 
 set(CMAKE_C_STANDARD 23)
 
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+    set(TARGET_PREFIX "")
+else ()
+    set(TARGET_PREFIX "xLR_")
+endif ()
+
 #add_compile_options("-O3" "-Os")
 add_compile_options("-funsigned-char")
 add_compile_options("-Wall" "-Wextra" "-Werror")
@@ -26,5 +32,11 @@ endif ()
 
 add_subdirectory(regex)
 
-add_library(xLR STATIC LRContext.c LRContext.h LRRuleParser.c LRRuleParser.h)
-target_include_directories(xLR PRIVATE regex/include)
+file(GLOB_RECURSE XLR_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} src/*.c src/*.h)
+add_library(${TARGET_PREFIX}xLR STATIC ${XLR_SRC})
+target_include_directories(${TARGET_PREFIX}xLR PRIVATE include regex/include)
+target_link_libraries(${TARGET_PREFIX}xLR PRIVATE Regex::grammar)
+
+add_executable(${TARGET_PREFIX}debug test/debug.c)
+target_include_directories(${TARGET_PREFIX}debug PRIVATE include regex/include)
+target_link_libraries(${TARGET_PREFIX}debug PRIVATE ${TARGET_PREFIX}xLR)
