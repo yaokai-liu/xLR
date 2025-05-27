@@ -252,7 +252,8 @@ inline void LRItem_build_closure(const LRContext *context, Array *item_array) {
 }
 
 inline LRAction *
-LRState_set_reduce_action(LRContext *context, LRState *state, uint32_t key_info, const LRItem *item, uint64_t enable) {
+LRState_set_reduce_action(LRContext *context, LRState *state, uint32_t key_info,
+                          const LRItem *item, uint64_t enable) {
   const LRActKeyPair key = {.key_info = key_info, .symbol = item->look};
   LRAction *action = Dict_get(state->actions, &key);
   if (!action) {
