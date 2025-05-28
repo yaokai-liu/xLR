@@ -145,22 +145,22 @@ INDEX(LRRule) LRContext_add_rules_from_regex(LRContext *context, const REFER(cha
       LRRule *rule = Array_last_real(context->rule_array);
       for (uint32_t j = 0; j < n_objects; j++) {
         INDEX(LRSymbol) i_sym = 0;
-        if (objects[i].type == enum_Group) {
-          regexp = ((Group *) objects[i].target)->regexp;
+        if (objects[j].type == enum_Group) {
+          regexp = ((Group *) objects[j].target)->regexp;
           if (regexp && Array_length(regexp) > 0) {
             LRContext_add_symbol(context);
             i_sym = Array_length(context->sym_array) - 1;
             RegexPair sub_pair = { .target = i_sym, .regex = regexp };
             Array_append(regex_array, &sub_pair, 1);
           }
-        } else if (objects[i].type == enum_SYMBOL) {
-          LRContext_add_named_symbol(context, objects[i].target);
+        } else if (objects[j].type == enum_SYMBOL) {
+          LRContext_add_named_symbol(context, objects[j].target);
           i_sym = Array_length(context->sym_array) - 1;
         } else {
           context->error = XLR_ERROR_BAD_TOKEN;
           goto __failed_to_add_rule;
         }
-        i_sym = LRRule_add_item(context, i_sym, objects[i].min_times, objects[i].max_times);
+        i_sym = LRRule_add_item(context, i_sym, objects[j].min_times, objects[j].max_times);
         if (!i_sym) { goto __failed_to_add_rule; }
         Array_append(rule->items, &i_sym, 1);
       }
@@ -252,7 +252,7 @@ inline INDEX(LRSymbol) LRContext_add_target(LRContext *context, ErrInfo *errInfo
   Array_append(context->rule_array, &rule, 1);
 
   LREnvPair pair = { .state = 0, .follow = SYM_INDEX_TERMINATOR };
-  Set *rule_set = Set_new(sizeof(INDEX(LRRule)), XLR_TYPE_RULE, nullptr, nullptr, allocator);
+  Set *rule_set = LRContext_new_ruleset();
   Set_add(rule_set, &i_rule);
 
   Dict_set(sym->envs, &pair, rule_set);

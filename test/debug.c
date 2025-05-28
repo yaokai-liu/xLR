@@ -29,12 +29,12 @@
 
 
 int main() {
-  const char_t *string = "Range = SYMBOL MINUS SYMBOL";
+  const char_t *string = "GrammarEntry = RegisterGroup* | Instruction | Memory | Immediate | RecordSet | List;";
   LRContext *context = LRContext_new(&STDAllocator);
   ErrInfo errInfo = {};
   INDEX(LRRule) i_rule = LRContext_add_rule(context, &errInfo, string);
   if (!i_rule) { return (int) errInfo.code; }
-  INDEX(LRSymbol) i_sym = LRContext_add_target(context, &errInfo, "Range");
+  INDEX(LRSymbol) i_sym = LRContext_add_target(context, &errInfo, "GrammarEntry");
   if (!i_sym) { return (int) errInfo.code; }
   uint32_t result = LRContext_set_rule(context, i_rule, true);
   if (result != XLR_SUCCESS) { return (int) result; }
