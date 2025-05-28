@@ -1,6 +1,6 @@
 /* License
  *
- * ${PROJ_DESCRIPTION}
+ * xLR - Dynamic LR(1) Grammar Parser
  * Copyright (C) 2025 Yaokai Liu
  *
  * This program is free software: you can redistribute it and/or modify
