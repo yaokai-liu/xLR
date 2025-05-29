@@ -426,3 +426,7 @@ inline uint32_t LRContext_set_rule(LRContext *context, const INDEX(LRRule) i_rul
   context->error = XLR_SUCCESS;
   return context->error;
 }
+
+uint32_t LRContext_set_rule_action(LRContext *context, INDEX(LRRule) i_rule) {
+
+}

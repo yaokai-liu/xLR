@@ -30,12 +30,12 @@
 
 #include "xLR/error.h"
 #include "regex/xlr.h"
+#include "avl-tree.h"
 #include "xLR/xlr.h"
 #include "array.h"
 #include "trie.h"
 #include "dict.h"
 #include "set.h"
-#include "avl-tree.h"
 
 enum XLR_TYPE_ENUM {
   XLR_TYPE_BAD_TYPE = 0,

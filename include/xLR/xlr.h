@@ -47,5 +47,6 @@ LRContext *LRContext_new(const Allocator *allocator);
 uint32_t LRContext_set_rule(LRContext *context, INDEX(LRRule) i_rule, uint64_t enable_flag);
 INDEX(LRRule) LRContext_add_rule(LRContext *context, ErrInfo *errInfo, const char_t *string);
 INDEX(LRSymbol) LRContext_add_target(LRContext *context, ErrInfo *errInfo, const char_t *string);
+uint32_t LRContext_set_rule_action(LRContext *context, INDEX(LRRule) i_rule);
 
 #endif //XLR_INCLUDE_XLR_PARSE_H

@@ -184,8 +184,8 @@ INDEX(LRRule) LRContext_add_rules_from_regex(LRContext *context, const REFER(cha
 #define token_check(expr) do {            \
   if (!(expr)) {                          \
     errInfo->code = XLR_UNEXPECTED_TOKEN; \
-    errInfo->pos = token.location;        \
-    errInfo->token = token.type;          \
+    errInfo->pos = terminal.location;     \
+    errInfo->token = terminal.type;       \
     errInfo->state = 0;                   \
     return 0;                             \
   }                                       \
@@ -194,25 +194,25 @@ INDEX(LRRule) LRContext_add_rules_from_regex(LRContext *context, const REFER(cha
 INDEX(LRRule) LRContext_add_rule(LRContext *context, ErrInfo *errInfo, const char_t *string) {
   const Allocator *const allocator = context->allocator;
   XLRTokenizer * tokenizer = XLRTokenizer_new(string, context->ident_array, context->ident_trie, allocator);
-  Token token = {};
+  Terminal terminal = {};
   uint32_t result = REGEX_ERROR_UNRECOGNIZED_SYMBOL;
 
-  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &token, errInfo, allocator);
+  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &terminal, errInfo, allocator);
   if (result != REGEX_SUCCESS) { return 0; }
-  token_check(token.type == enum_SYMBOL);
+  token_check(terminal.type == enum_SYMBOL);
 
-  REFER(char_t) target = token.value;
+  REFER(char_t) target = terminal.value;
 
-  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &token, errInfo, allocator);
+  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &terminal, errInfo, allocator);
   if (result != REGEX_SUCCESS) { return 0; }
-  token_check(token.type == enum_ASSIGNER);
+  token_check(terminal.type == enum_ASSIGNER);
 
   Regex *regex = parse((Tokenizer *) tokenizer, errInfo, allocator);
   if (!regex) { return 0; }
 
-  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &token, errInfo, allocator);
+  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &terminal, errInfo, allocator);
   if (result != REGEX_SUCCESS) { return 0; }
-  token_check(token.type == enum_SEMICOLON || token.type == enum_TERMINATOR);
+  token_check(terminal.type == enum_SEMICOLON || terminal.type == enum_TERMINATOR);
 
   INDEX(LRRule) i_rule = LRContext_add_rules_from_regex(context, target, regex);
   XLRTokenizer_destroy(tokenizer);
@@ -223,18 +223,18 @@ INDEX(LRRule) LRContext_add_rule(LRContext *context, ErrInfo *errInfo, const cha
 inline INDEX(LRSymbol) LRContext_add_target(LRContext *context, ErrInfo *errInfo, const char_t *string) {
   const Allocator *const allocator = context->allocator;
   XLRTokenizer * tokenizer = XLRTokenizer_new(string, context->ident_array, context->ident_trie, allocator);
-  Token token = {};
+  Terminal terminal = {};
   uint32_t result = REGEX_ERROR_UNRECOGNIZED_SYMBOL;
 
-  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &token, errInfo, allocator);
+  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &terminal, errInfo, allocator);
   if (result != REGEX_SUCCESS) { return 0; }
-  token_check(token.type == enum_SYMBOL);
+  token_check(terminal.type == enum_SYMBOL);
 
-  REFER(char_t) v_ident = token.value;
+  REFER(char_t) v_ident = terminal.value;
 
-  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &token, errInfo, allocator);
+  result = tokenizer->SUPER.next((Tokenizer *) tokenizer, &terminal, errInfo, allocator);
   if (result != REGEX_SUCCESS) { return 0; }
-  token_check(token.type == enum_TERMINATOR);
+  token_check(terminal.type == enum_TERMINATOR);
 
   REFER(LRSymbol) v_sym = AVLTree_get(context->sym_tree, (uint64_t) v_ident);
   if (!v_sym) {
