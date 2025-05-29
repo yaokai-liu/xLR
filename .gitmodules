@@ -1,6 +1,11 @@
 [submodule "meman"]
 	path = meman
 	url = git@github.com:yaokai-liu/meman.git
-[submodule "regex"]
-	path = regex
-	url = git@github.com:yaokai-liu/regex.git
+[submodule "liu-xLR"]
+	path = liu-xLR
+	url = git@github.com:yaokai-liu/Xnf.git
+	branch = liu-xLR
+[submodule "xnf-json2C"]
+	path = xnf-json2C
+	url = git@github.com:yaokai-liu/xnf-json2C.git
+	branch = liu-xLR

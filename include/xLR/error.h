@@ -18,21 +18,21 @@
  *
  *
  * Project Name: xLR
- * Module Name: include
+ * Module Name:
  * Filename: error.h
  * Creator: Yaokai Liu
  * Create Date: 2025-05-27
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef XLR_INCLUDE_ERROR_H
-#define XLR_INCLUDE_ERROR_H
+#ifndef XLR_ERROR_H
+#define XLR_ERROR_H
 
-#include "regex/error.h"
+#include "token.h"
 
 enum XLR_ERROR_CODE_ENUM {
-  XLR_SUCCESS = REGEX_SUCCESS,
-  XLR_ERROR_UNRECOGNIZED_SYMBOL = REGEX_ERROR_UNRECOGNIZED_SYMBOL,
+  XLR_SUCCESS,
+  XLR_ERROR_UNRECOGNIZED_SYMBOL,
   XLR_ERROR_SR_CONFLICT,
   XLR_ERROR_RS_CONFLICT,
   XLR_ERROR_RR_CONFLICT,
@@ -48,4 +48,12 @@ enum XLR_ERROR_CODE_ENUM {
   XLR_ERROR_BAD_RULE,
 };
 
-#endif //XLR_INCLUDE_ERROR_H
+
+typedef struct ErrInfo {
+  Location pos;
+  uint32_t code;
+  int32_t  state;
+  uint32_t token;
+} ErrInfo;
+
+#endif //XLR_ERROR_H

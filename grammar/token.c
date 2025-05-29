@@ -1,6 +1,6 @@
 /* License
  *
- * xLR - Dynamic LR(1) Grammar Parser
+ * ${PROJ_DESCRIPTION}
  * Copyright (C) 2025 Yaokai Liu
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,25 +18,15 @@
  *
  *
  * Project Name: xLR
- * Module Name: test
- * Filename: debug.c
+ * Module Name: grammar
+ * Filename: token.c
  * Creator: Yaokai Liu
- * Create Date: 2025-05-27
+ * Create Date: 2025-05-29
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#include "xLR/xlr.h"
+#include "xLR/tokens.h"
 
-
-int main() {
-  const char_t *string = "GrammarEntry = RegisterGroup* | Instruction | Memory | Immediate | RecordSet | List;";
-  LRContext *context = LRContext_new(&STDAllocator);
-  ErrInfo errInfo = {};
-  INDEX(LRRule) i_rule = LRContext_add_rule(context, &errInfo, string);
-  if (!i_rule) { return (int) errInfo.code; }
-  INDEX(LRSymbol) i_sym = LRContext_add_target(context, &errInfo, "GrammarEntry");
-  if (!i_sym) { return (int) errInfo.code; }
-  uint32_t result = LRContext_enable_rule(context, i_rule);
-  if (result != XLR_SUCCESS) { return (int) result; }
-  return 0;
+const char_t *get_name(uint16_t type) {
+  return TOKEN_NAMES[type];
 }

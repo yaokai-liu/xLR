@@ -23,6 +23,22 @@ if (ENABLE_GPROF)
     add_link_options("-pg")
 endif ()
 
+set(XLR_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/grammar/generated")
+set(XLR_TOKEN_ENUM_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/xLR/tokens.h")
+set(XLR_GEN_TOKEN_ENUM_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/grammar/generated/tokens.gen.h")
+if(NOT EXISTS ${XLR_GENERATED_DIR} OR NOT EXISTS ${XLR_TOKEN_ENUM_HEADER})
+    message(STATUS "${XLR_GENERATED_DIR} doesn't exist or not complete, generate grammar action table.")
+    execute_process(COMMAND /bin/sh ${CMAKE_CURRENT_SOURCE_DIR}/codegen.sh
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+else()
+    message(STATUS "${XLR_GENERATED_DIR} exists, skip to generate grammar action table.")
+endif()
+
+if (EXISTS ${XLR_GEN_TOKEN_ENUM_HEADER})
+    file(RENAME ${XLR_GEN_TOKEN_ENUM_HEADER} ${XLR_TOKEN_ENUM_HEADER})
+endif ()
+
+
 if (NOT TARGET meman)
     include_directories(meman)
     aux_source_directory(meman MEMAN_SRC)
@@ -30,13 +46,12 @@ if (NOT TARGET meman)
     link_libraries(meman)
 endif ()
 
-add_subdirectory(regex)
+include_directories(include)
 
-file(GLOB_RECURSE XLR_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} src/*.c src/*.h)
-add_library(${TARGET_PREFIX}xLR STATIC ${XLR_SRC})
-target_include_directories(${TARGET_PREFIX}xLR PRIVATE include regex/include)
-target_link_libraries(${TARGET_PREFIX}xLR PRIVATE Regex::grammar)
+file(GLOB_RECURSE XLR_GRAMMAR_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} grammar/*.c grammar/*.h)
+add_library(${TARGET_PREFIX}grammar STATIC ${XLR_GRAMMAR_SRC})
+target_include_directories(${TARGET_PREFIX}grammar PRIVATE grammar)
+
 
 add_executable(${TARGET_PREFIX}debug test/debug.c)
-target_include_directories(${TARGET_PREFIX}debug PRIVATE include regex/include)
-target_link_libraries(${TARGET_PREFIX}debug PRIVATE ${TARGET_PREFIX}xLR)
+target_link_libraries(${TARGET_PREFIX}debug PRIVATE ${TARGET_PREFIX}grammar)

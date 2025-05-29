@@ -18,8 +18,8 @@
  *
  *
  * Project Name: xLR
- * Module Name:
- * Filename: LRContext.h
+ * Module Name: grammar/xLR
+ * Filename: context.h
  * Creator: Yaokai Liu
  * Create Date: 2025-05-15
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
@@ -29,7 +29,6 @@
 #define XLR_LR_CONTEXT_H
 
 #include "xLR/error.h"
-#include "regex/xlr.h"
 #include "avl-tree.h"
 #include "xLR/xlr.h"
 #include "array.h"
@@ -59,17 +58,26 @@ typedef enum SYMBOL_TYPE_ENUM : uint8_t {
   SYMTYPE_NON_TERMINAL,
 } symtype;
 
-typedef enum ACTION_TYPE_ENUM : uint8_t {
-  ACTTYPE_REJECT,
-  ACTTYPE_STACK,
-  ACTTYPE_REDUCE,
-  ACTTYPE_REPEAT,
-} acttype;
-
 typedef enum STATE_TYPE_ENUM : uint8_t {
   STATYPE_NORMAL,
   STATYPE_REPEAT,
 } statype;
+
+enum BUILTIN_SYMBOL_INDEX_ENUM {
+  SYM_INDEX_EMPTY = 0,
+  SYM_INDEX_TERMINATOR = 1,
+  SYM_INDEX_EXTEND = 2,
+};
+
+enum BUILTIN_STATE_INDEX_ENUM {
+  STA_INDEX_BAD_STATE = 0,
+  STA_INDEX_BASIC_STATE = 1,
+};
+
+typedef struct LRSymbol LRSymbol;
+typedef struct LRState LRState;
+typedef struct LRItem LRItem;
+typedef struct LRRule LRRule;
 
 typedef struct LRRulePair {
   bool enabled;
@@ -90,18 +98,7 @@ typedef struct LRActKeyPair {
   uint32_t      key_info;
 } LRActKeyPair;
 
-typedef struct LRAction {
-  acttype acttype;
-  // rules that rules this action
-  Set * rules;
-  /*
-   * if acttype:
-   * is ACTTYPE_STACK:        next state index;
-   * is ACTTYPE_REDUCE:       reduce rule index;
-   * is TRANSFORM:            target symbol index;
-   */
-  uint32_t index;
-} LRAction;
+typedef struct LRAction LRAction;
 
 typedef struct LRState {
   statype  type;
@@ -111,7 +108,6 @@ typedef struct LRState {
    * Dict<LRActKeyPair, LRAction>
    */
   Dict *actions;
-  trans_t *fn_convert;
 } LRState;
 
 typedef struct LRSymbol {
@@ -141,10 +137,6 @@ typedef struct LRSymbol {
   Dict *envs;
 } LRSymbol, LRTerminal;
 
-constexpr uint32_t SYM_INDEX_EMPTY = 0;
-constexpr uint32_t SYM_INDEX_TERMINATOR = 1;
-constexpr uint32_t SYM_INDEX_EXTEND = 2;
-
 typedef struct LRRule {
   Array *items;  // Array<INDEX(LRSymbol)>
   INDEX(LRSymbol) target;
@@ -166,12 +158,15 @@ typedef struct LRContext {
   AVLTree *sym_tree;    // AVLTree<REFER(char_t), REFER(LRSymbol)>
   Array *rule_array;    // Array<LRRule>
   Array *state_array;   // Array<LRState>
+  INDEX(LRState) state;
   uint32_t error;
 } LRContext;
 
 typedef struct LRRulePair LRRulePair;  // Pair<bool, INDEX(LRRule)>
 typedef struct LREnvPair LREnvPair;  // Pair<INDEX(LRState), INDEX(LRTerminal)>
 typedef struct LRActKeyPair LRActKeyPair;
+
+uint32_t LRContext_set_rule(LRContext *context, INDEX(LRRule) i_rule, bool enable_flag);
 
 int32_t LRAction_cmp(const LRAction *a, const LRAction *b);
 uint64_t LREnvPair_hash(const LREnvPair *pair);

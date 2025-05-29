@@ -18,14 +18,15 @@
  *
  *
  * Project Name: xLR
- * Module Name:
- * Filename: LRContext.c
+ * Module Name: grammar/xLR
+ * Filename: context.c
  * Creator: Yaokai Liu
  * Create Date: 2025-05-15
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#include "LRContext.h"
+#include "context.h"
+#include "xLR/char_t.h"
 
 #define Array_foreach(type, _array, doing)              \
   do {                                                  \
@@ -306,8 +307,7 @@ LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, 
   LRAction *action = Dict_get(state->actions, &key);
   if (!action) {
     const INDEX(LRState) index = Array_length(context->state_array);
-    LRState new_state = {.type = STATYPE_NORMAL, .count = 0, .index = index,
-                         .actions = LRState_new_actions(), .fn_convert = nullptr};
+    LRState new_state = { .type = STATYPE_NORMAL, .count = 0, .index = index, .actions = LRState_new_actions() };
     Array_append(context->state_array, &new_state, 1);
     LRAction new_action = { .acttype = ACTTYPE_STACK, .rules = LRContext_new_ruleset(), .index = new_state.index };
     Dict_set(state->actions, &key, &new_action);
@@ -336,28 +336,26 @@ LRContext *LRContext_new(const Allocator *allocator) {
   context->sym_tree = AVLTree_new(allocator, nullptr);
 
   Array_append(context->ident_array, "", 1);
-  const LRSymbol extend_symbol = {
+  const LRSymbol EXTEND_SYMBOL = {
     .symtype = SYMTYPE_NON_TERMINAL, .index = SYM_INDEX_EXTEND,
     .rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator),
     .firsts = LRSymbol_new_firsts(), .envs = LRSymbol_new_envs()
   };
-  LREnvPair pair = { .state = 0, .follow = SYM_INDEX_TERMINATOR };
-  Set *rule_set = Set_new(sizeof(INDEX(LRRule)), XLR_TYPE_RULE, nullptr, nullptr, allocator);
-  Dict_set(extend_symbol.envs, &pair, rule_set);
+  LREnvPair pair = { .state = STA_INDEX_BASIC_STATE, .follow = SYM_INDEX_TERMINATOR };
+  Set *rule_set = LRContext_new_ruleset();
+  Dict_set(EXTEND_SYMBOL.envs, &pair, rule_set);
 
   Array_append(context->sym_array, DEFAULT_SYMBOLS, 2);
-  Array_append(context->sym_array, &extend_symbol, 1);
+  Array_append(context->sym_array, &EXTEND_SYMBOL, 1);
 
-  const LRState BASIC_STATE = {
-      .type = STATYPE_NORMAL, .index = 0, .count = 1,
-      .fn_convert = nullptr, .actions = LRState_new_actions()
-  };
+  const LRState BAD_STATE = {};
+  Array_append(context->state_array, &BAD_STATE, 1);
+  const LRState BASIC_STATE = { .type = STATYPE_NORMAL, .index = STA_INDEX_BASIC_STATE, .count = 1, .actions = LRState_new_actions() };
   Array_append(context->state_array, &BASIC_STATE, 1);
+  context->state = STA_INDEX_BASIC_STATE;
 
-  const LRRule BASIC_RULE = {
-    .items = nullptr, SYM_INDEX_EMPTY, false
-  };
-  Array_append(context->rule_array, &BASIC_RULE, 1);
+  const LRRule BAD_RULE = { .items = nullptr, .target = SYM_INDEX_EMPTY, .enabled = false };
+  Array_append(context->rule_array, &BAD_RULE, 1);
 
   return context;
 }
@@ -385,9 +383,10 @@ inline void LRContext_enumerate_items(LRContext *context, const INDEX(LRRule) i_
   LRItem_build_closure(context, item_array);
 }
 
-inline uint32_t LRContext_set_rule(LRContext *context, const INDEX(LRRule) i_rule, uint64_t enable_flag) {
+inline uint32_t LRContext_set_rule(LRContext *context, INDEX(LRRule) i_rule, bool enable_flag) {
   enable_flag = enable_flag ? 1 : 0;
   const uint32_t action_flag = enable_flag ? 1 : -1;
+  if (!i_rule) { context->error = XLR_ERROR_BAD_RULE; return context->error; }
   LRRule * const rule = Array_real_addr(context->rule_array, i_rule);
   if (!rule) { context->error = XLR_ERROR_BAD_RULE; return context->error; }
   if (rule->enabled == enable_flag) {
@@ -427,6 +426,10 @@ inline uint32_t LRContext_set_rule(LRContext *context, const INDEX(LRRule) i_rul
   return context->error;
 }
 
-uint32_t LRContext_set_rule_action(LRContext *context, INDEX(LRRule) i_rule) {
+uint32_t LRContext_enable_rule(LRContext *context, INDEX(LRRule) i_rule) {
+  return (LRContext_set_rule(context, i_rule, true) == XLR_SUCCESS) ? i_rule : 0;
+}
 
+uint32_t LRContext_disable_rule(LRContext *context, INDEX(LRRule) i_rule) {
+  return (LRContext_set_rule(context, i_rule, false) == XLR_SUCCESS) ? i_rule : 0;
 }

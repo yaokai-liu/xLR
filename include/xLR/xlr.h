@@ -18,35 +18,50 @@
  *
  *
  * Project Name: xLR
- * Module Name: include/xLR
- * Filename: parse.h
+ * Module Name:
+ * Filename: xlr.h
  * Creator: Yaokai Liu
  * Create Date: 2025-05-27
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef XLR_INCLUDE_XLR_PARSE_H
-#define XLR_INCLUDE_XLR_PARSE_H
+#ifndef XLR_H
+#define XLR_H
 
 #include <stdint.h>
 #include "allocator.h"
-#include "regex/char_t.h"
+#include "xLR/char_t.h"
 #include "xLR/error.h"
-typedef struct LRContext LRContext;
-typedef struct LRAction LRAction;
-typedef struct LRSymbol LRSymbol;
-typedef struct LRState LRState;
-typedef struct LRItem LRItem;
-typedef struct LRRule LRRule;
-#define INDEX(o) uint32_t
+#include "set.h"
 
-typedef INDEX(LRSymbol) trans_t(INDEX(LRSymbol));
+typedef enum ACTION_TYPE_ENUM : uint8_t {
+  ACTTYPE_REJECT,
+  ACTTYPE_STACK,
+  ACTTYPE_REDUCE,
+} acttype;
+
+typedef struct LRAction {
+  acttype acttype;
+  /*
+   * if acttype:
+   * is ACTTYPE_STACK:        next state index;
+   * is ACTTYPE_REDUCE:       reduce rule index;
+   * is TRANSFORM:            target symbol index;
+   */
+  uint32_t index;
+  // rules that involve this action
+  Set * rules;
+} LRAction;
+
+typedef struct LRContext LRContext;
+#define INDEX(o) uint32_t
 
 void LRContext_destroy(LRContext *context);
 LRContext *LRContext_new(const Allocator *allocator);
-uint32_t LRContext_set_rule(LRContext *context, INDEX(LRRule) i_rule, uint64_t enable_flag);
+uint32_t LRContext_enable_rule(LRContext *context, INDEX(LRRule) i_rule);
+uint32_t LRContext_disable_rule(LRContext *context, INDEX(LRRule) i_rule);
 INDEX(LRRule) LRContext_add_rule(LRContext *context, ErrInfo *errInfo, const char_t *string);
 INDEX(LRSymbol) LRContext_add_target(LRContext *context, ErrInfo *errInfo, const char_t *string);
-uint32_t LRContext_set_rule_action(LRContext *context, INDEX(LRRule) i_rule);
 
-#endif //XLR_INCLUDE_XLR_PARSE_H
+
+#endif //XLR_H

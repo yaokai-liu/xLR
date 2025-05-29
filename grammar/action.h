@@ -1,6 +1,6 @@
 /* License
  *
- * xLR - Dynamic LR(1) Grammar Parser
+ * ${PROJ_DESCRIPTION}
  * Copyright (C) 2025 Yaokai Liu
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,19 +18,28 @@
  *
  *
  * Project Name: xLR
- * Module Name: 
- * Filename: LRParser.h
+ * Module Name: grammar
+ * Filename: action.h
  * Creator: Yaokai Liu
- * Create Date: 2025-05-21
+ * Create Date: 2025-05-29
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef XLR_LR_PARSER_H
-#define XLR_LR_PARSER_H
+#ifndef XLR_GRAMMAR_ACTION_H
+#define XLR_GRAMMAR_ACTION_H
 
-#include "LRContext.h"
-#include "regex/types.h"
+#include <stdint.h>
 
-INDEX(LRRule) LRContext_add_rules_from_regex(LRContext *context, const REFER(char_t) target, const Regex *regexp);
+typedef struct state state;
+struct grammar_action {
+  enum : uint8_t {
+    XLR_action_reject = 0,
+    XLR_action_stack = 1,
+    XLR_action_reduce = 2
+  } action      : 4;
+  uint8_t count : 4;
+  uint8_t type;
+  const uint16_t offset;
+};
 
-#endif //XLR_LR_PARSER_H
+#endif //XLR_GRAMMAR_ACTION_H
