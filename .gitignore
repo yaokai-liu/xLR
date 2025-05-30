@@ -13,3 +13,4 @@ __pycache__
 *.gen.c
 .cache
 grammar/generated
+include/xLR/tokens.h

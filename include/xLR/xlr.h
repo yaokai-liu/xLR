@@ -31,8 +31,8 @@
 #include <stdint.h>
 #include "allocator.h"
 #include "xLR/char_t.h"
-#include "xLR/error.h"
 #include "set.h"
+
 
 typedef enum ACTION_TYPE_ENUM : uint8_t {
   ACTTYPE_REJECT,
@@ -55,13 +55,5 @@ typedef struct LRAction {
 
 typedef struct LRContext LRContext;
 #define INDEX(o) uint32_t
-
-void LRContext_destroy(LRContext *context);
-LRContext *LRContext_new(const Allocator *allocator);
-uint32_t LRContext_enable_rule(LRContext *context, INDEX(LRRule) i_rule);
-uint32_t LRContext_disable_rule(LRContext *context, INDEX(LRRule) i_rule);
-INDEX(LRRule) LRContext_add_rule(LRContext *context, ErrInfo *errInfo, const char_t *string);
-INDEX(LRSymbol) LRContext_add_target(LRContext *context, ErrInfo *errInfo, const char_t *string);
-
 
 #endif //XLR_H

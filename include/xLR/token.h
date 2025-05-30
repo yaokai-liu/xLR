@@ -67,5 +67,6 @@ typedef struct Token {
 } Token;
 
 const char_t *get_name(uint16_t type);
+void releaseToken(Token *token, const Allocator *allocator);
 
 #endif //XLR_TOKEN_H

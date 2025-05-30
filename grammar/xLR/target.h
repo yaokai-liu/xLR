@@ -1,6 +1,6 @@
 /* License
  *
- * ${PROJ_DESCRIPTION}
+ * xLR - Dynamic LR(1) Grammar Parser
  * Copyright (C) 2025 Yaokai Liu
  *
  * This program is free software: you can redistribute it and/or modify
@@ -30,11 +30,22 @@
 
 #include "array.h"
 
-typedef void GrammarEntry;
+typedef struct GrammarEntry {
+uint32_t type
+} GrammarEntry;
 
-typedef Array Declarations, GrammarItems, ActionStatements, Arguments;
-typedef ActionStatements ActionBlock, GrammarAction;
-typedef GrammarItems GrammarPattern;
+typedef Array Declarations, ActionStatements;
+
+
+typedef Array GrammarItems, Arguments, EnumAssignments;
+
+typedef struct ActionBlock {
+
+} ActionBlock, GrammarAction;
+
+typedef struct EnumDeclaration {
+
+} EnumDeclaration;
 
 typedef struct TokenDefinition {
 
@@ -43,6 +54,10 @@ typedef struct TokenDefinition {
 typedef struct RuleDefinition {
 
 } RuleDefinition;
+
+typedef struct GrammarPattern {
+
+} GrammarPattern;
 
 typedef struct ActionStatement {
 
@@ -72,11 +87,30 @@ struct Expression {
   void *rhs;
 };
 
-typedef struct Expression CondExpr, AndCondExpr, SingleCondExpr;
+typedef struct Expression Expr, CondExpr, AndCondExpr, SingleCondExpr;
 typedef struct Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;
 typedef struct Expression AssignExpr, Assignable, Accessed, Subscribed;
 typedef struct Expression Evaluable, IntegratedExpr, FunctionCall;
 typedef struct Expression OptionalAssignExpr, OptionalCondExpr;
+typedef AssignExpr EnumAssignment;
 
+void releaseActionBlock(ActionBlock *, const Allocator *);
+void releaseRuleDefinition(RuleDefinition *, const Allocator *);
+void releaseDeclaration(Declaration *, const Allocator *);
+void releaseTokenDefinition(TokenDefinition *, const Allocator *);
+void releaseActionStatement(ActionStatement *, const Allocator *);
+void releaseGrammarEntry(GrammarEntry *, const Allocator *);
+void releaseIfCondition(IfCondition *, const Allocator *);
+void releaseForStatement(ForStatement *, const Allocator *);
+void releaseGrammarItem(GrammarItem *, const Allocator *);
+void releaseIfStatement(IfStatement *, const Allocator *);
+void releaseDecItem(DecItem *, const Allocator *);
+void releaseWhileStatement(WhileStatement *, const Allocator *);
+void releaseEnumAssignment(EnumAssignment *, const Allocator *);
+void releaseCondStatement(CondStatement *, const Allocator *);
+void releaseGrammarPattern(GrammarPattern *, const Allocator *);
+void releaseEnumDeclaration(EnumDeclaration *, const Allocator *);
+void releaseForCondition(ForCondition *, const Allocator *);
+void releaseExpr(Expr *, const Allocator *);
 
 #endif //XLR_GRAMMAR_XLR_TARGET_H

@@ -18,28 +18,29 @@
  *
  *
  * Project Name: xLR
- * Module Name: grammar
- * Filename: action.h
+ * Module Name: grammar/xLR
+ * Filename: parse.h
  * Creator: Yaokai Liu
- * Create Date: 2025-05-29
+ * Create Date: 2025-05-30
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef XLR_GRAMMAR_ACTION_H
-#define XLR_GRAMMAR_ACTION_H
+#ifndef XLR_GRAMMAR_XLR_PARSE_H
+#define XLR_GRAMMAR_XLR_PARSE_H
 
-#include <stdint.h>
+#include "stack.h"
+#include "tokenize/tokenizer.h"
+#include "context.h"
+#include "target.h"
 
-typedef struct state state;
-struct grammar_action {
-  enum : uint8_t {
-    XLR_action_reject = 0,
-    XLR_action_stack = 1,
-    XLR_action_reduce = 2
-  } action      : 4;
-  uint8_t count : 4;
-  uint8_t type;
-  const uint16_t offset;
-};
+GrammarEntry *parse(Tokenizer *tokenizer, LRContext *context, ErrInfo *errInfo, const Allocator *allocator);
 
-#endif //XLR_GRAMMAR_ACTION_H
+GrammarEntry *failed_to_get_next_state(
+    Stack *state_stack, Stack *token_stack, Token *token, const Allocator *allocator
+);
+GrammarEntry *failed_to_produce(Stack *state_stack, Stack *token_stack, Token *, uint32_t,
+                                const Allocator *allocator);
+GrammarEntry  *clean_parse_stack(Stack *state_stack, Stack *token_stack, const Allocator *allocator);
+
+
+#endif //XLR_GRAMMAR_XLR_PARSE_H

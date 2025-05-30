@@ -8,9 +8,9 @@ ${license}
 
 enum TOKEN_TYPE_ENUM: uint32_t {
   ${enums},
-  enum_PLACE_HOLDER,
-  MAX_TOTAL_TOKEN,
-  enum_BAD_TOKEN = UINT32_MAX
+  XLR_TOKEN_PLACE_HOLDER,
+  XLR_MAX_TOTAL_TOKEN,
+  XLR_TOKEN_BAD_TOKEN = UINT32_MAX
 };
 extern const char_t *TOKEN_NAMES[];
 #endif  // XLR_TOKENS_H

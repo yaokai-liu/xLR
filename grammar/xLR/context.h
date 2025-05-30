@@ -177,4 +177,15 @@ void LRAction_release(LRAction *action, const Allocator *allocator);
 void LRRule_release(LRRule *rule, const Allocator *allocator);
 void LRRuleSet_release(Set *set, const Allocator *allocator);
 
+void LRContext_destroy(LRContext *context);
+LRContext *LRContext_new(const Allocator *allocator);
+uint32_t LRContext_enable_rule(LRContext *context, INDEX(LRRule) i_rule);
+uint32_t LRContext_disable_rule(LRContext *context, INDEX(LRRule) i_rule);
+INDEX(LRRule) LRContext_add_rule(LRContext *context, ErrInfo *errInfo, const char_t *string);
+INDEX(LRSymbol) LRContext_add_target(LRContext *context, ErrInfo *errInfo, const char_t *string);
+
+typedef void fn_ctx_act(LRContext *context, const Token *token);
+
+fn_ctx_act *getLRContextAction(uint32_t state);
+
 #endif  // XLR_LR_CONTEXT_H

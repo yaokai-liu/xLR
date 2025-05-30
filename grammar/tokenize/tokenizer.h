@@ -18,28 +18,27 @@
  *
  *
  * Project Name: xLR
- * Module Name: grammar
- * Filename: action.h
+ * Module Name: grammar/tokenize
+ * Filename: tokenizer.h
  * Creator: Yaokai Liu
- * Create Date: 2025-05-29
+ * Create Date: 2025-05-30
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef XLR_GRAMMAR_ACTION_H
-#define XLR_GRAMMAR_ACTION_H
+#ifndef XLR_GRAMMAR_TOKENIZE_TOKENIZER_H
+#define XLR_GRAMMAR_TOKENIZE_TOKENIZER_H
 
-#include <stdint.h>
+#include "xLR/token.h"
+#include "xLR/error.h"
+#include "array.h"
+#include "trie.h"
 
-typedef struct state state;
-struct grammar_action {
-  enum : uint8_t {
-    XLR_action_reject = 0,
-    XLR_action_stack = 1,
-    XLR_action_reduce = 2
-  } action      : 4;
-  uint8_t count : 4;
-  uint8_t type;
-  const uint16_t offset;
-};
+typedef struct Tokenizer Tokenizer;
 
-#endif //XLR_GRAMMAR_ACTION_H
+Tokenizer *XLRTokenizer_new(const char_t *src, Array *ident_array, Trie *ident_trie, const Allocator *allocator);
+
+uint32_t XLRTokenizer_next(Tokenizer *tokenizer, Token *token, ErrInfo *errInfo, const Allocator *allocator);
+
+void XLRTokenizer_destroy(Tokenizer *tokenizer);
+
+#endif //XLR_GRAMMAR_TOKENIZE_TOKENIZER_H

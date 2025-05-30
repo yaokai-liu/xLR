@@ -69,6 +69,8 @@ SpacesInContainerLiterals: false
 SpacesInLineCommentPrefix: { Maximum: 4, Minimum: 1 }
 StatementMacros:
   - add_test_for
+  - fn_try_keyword
+  - fn_try_keyword_val
 TabWidth: 2
 UseCRLF: false
 UseTab: Never

@@ -19,27 +19,50 @@
  *
  * Project Name: xLR
  * Module Name: grammar
- * Filename: action.h
+ * Filename: enum.h
  * Creator: Yaokai Liu
- * Create Date: 2025-05-29
+ * Create Date: 2025-05-30
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef XLR_GRAMMAR_ACTION_H
-#define XLR_GRAMMAR_ACTION_H
+#ifndef XLR_GRAMMAR_ENUM_H
+#define XLR_GRAMMAR_ENUM_H
 
-#include <stdint.h>
-
-typedef struct state state;
-struct grammar_action {
-  enum : uint8_t {
-    XLR_action_reject = 0,
-    XLR_action_stack = 1,
-    XLR_action_reduce = 2
-  } action      : 4;
-  uint8_t count : 4;
-  uint8_t type;
-  const uint16_t offset;
+enum XLR_OP_ENUM {
+  XLR_AB_ADD = XLR_MAX_TOTAL_TOKEN + 1,
+  XLR_AB_SUB,
+  XLR_AB_MUL,
+  XLR_AB_DIV,
+  XLR_AB_MOD,
+  XLR_AB_OR,
+  XLR_AB_AND,
+  XLR_AB_XOR,
+  XLR_AB_LSH,
+  XLR_AB_RSH,
+  XLR_AS_INV,
+  XLR_CB_LT,
+  XLR_CB_LE,
+  XLR_CB_GT,
+  XLR_CB_GE,
+  XLR_CB_EQ,
+  XLR_CB_NE,
+  XLR_AS_ID,
+  RECURSIVE_OP_MAX = XLR_AS_ID,
 };
 
-#endif //XLR_GRAMMAR_ACTION_H
+enum XLR_BUILTIN_FUNCTION_ENUM {
+  XLR_BF_SIZEOF,
+};
+
+enum XLR_BUILTIN_TYPE_ENUM {
+  XLR_BT_U64, XLR_BT_U32, XLR_BT_U16, XLR_BT_U8,
+  XLR_BT_I64, XLR_BT_I32, XLR_BT_I16, XLR_BT_I8,
+};
+
+enum XLR_QUANT_TYPE_ENUM {
+  XLR_QUANT_ANY_COUNT,
+  XLR_QUANT_LESS_THAN_ONE,
+  XLR_QUANT_MORE_THAN_ONE,
+};
+
+#endif //XLR_GRAMMAR_ENUM_H
