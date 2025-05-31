@@ -27,6 +27,8 @@
 
 #include "context.h"
 #include "xLR/char_t.h"
+#include "generated/xLR/action-table.gen.h"
+#include "target.h"
 
 #define Array_foreach(type, _array, doing)              \
   do {                                                  \
@@ -105,17 +107,6 @@ LRAction *
 LRState_set_reduce_action(LRContext *context, LRState *state, uint32_t key_info, const LRItem *item, uint64_t enable);
 LRAction *LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, INDEX(LRSymbol) i_sym,
                                    INDEX(LRRule) i_rule, uint64_t enable);
-
-#define LRRule_new_items() Array_new(sizeof(INDEX(LRSymbol)), XLR_TYPE_SYMBOL, context->allocator)
-#define LRSymbol_new_envs() Dict_new(sizeof(LREnvPair), sizeof_set, (unikey_t *) LREnvPair_hash, \
-  XLR_TYPE_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)
-#define LRSymbol_new_firsts() Dict_new(sizeof(INDEX(LRTerminal)), sizeof_set, nullptr, \
-  XLR_TYPE_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, allocator)
-#define LRState_new_actions() Dict_new(sizeof(LRActKeyPair), sizeof(LRAction), (unikey_t *) LRActKeyPair_hash, \
-  XLR_TYPE_ACT_KEY, nullptr, (destruct_t *) LRAction_release, context->allocator)
-#define LRContext_new_ruleset() Set_new(sizeof(INDEX(LRRule)), \
-  XLR_TYPE_RULE_KEY, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)
-
 
 int32_t LRAction_cmp(const LRAction *a, const LRAction *b) {
   return (a->acttype == b->acttype) ? (int32_t) (a->index - b->index) : (int32_t) (a->acttype - b->acttype);
@@ -333,7 +324,12 @@ LRContext *LRContext_new(const Allocator *allocator) {
   context->ident_array = Array_new(sizeof(uint8_t), XLR_TYPE_CHAR, allocator);
   context->rule_array = Array_new(sizeof(LRRule), XLR_TYPE_RULE, allocator);
   context->ident_trie = Trie_new(sizeof(char_t), char2u64, allocator);
+  context->type_array = Array_new(sizeof(LRType), XLR_TYPE_TYPE, allocator);
+  context->enum_array = Array_new(sizeof_array, XLR_TYPE_ENUM, allocator);
+  context->rule_tree = AVLTree_new(allocator, nullptr);
+  context->type_tree = AVLTree_new(allocator, nullptr);
   context->sym_tree = AVLTree_new(allocator, nullptr);
+  context->in_pattern = false;
 
   Array_append(context->ident_array, "", 1);
   const LRSymbol EXTEND_SYMBOL = {
@@ -432,4 +428,26 @@ uint32_t LRContext_enable_rule(LRContext *context, INDEX(LRRule) i_rule) {
 
 uint32_t LRContext_disable_rule(LRContext *context, INDEX(LRRule) i_rule) {
   return (LRContext_set_rule(context, i_rule, false) == XLR_SUCCESS) ? i_rule : 0;
+}
+
+LRValue *LRContext_last_enum_val(LRContext *, ErrInfo *) {
+  return nullptr;
+}
+
+INDEX(LRType) LRContext_typeof(LRContext *, ErrInfo *, Expr *) {
+  return 0;
+}
+
+LRValue * LRContext_eval(LRContext *, ErrInfo *, Expr *) {
+  return nullptr;
+}
+
+
+void LRContext_state_action(LRContext *context, uint32_t state, Token *) {
+  switch (state) {
+    case XLR_state_TokenDefinition_IDENTIFIER_LEFT_PARENTHESIS: { context->in_pattern = true; break; }
+    case XLR_state_IDENTIFIER_IDENTIFIER_GrammarPattern:
+    case XLR_state_TokenDefinition_IDENTIFIER_GrammarPattern: { context->in_pattern = false; break; }
+    default:{}
+  }
 }

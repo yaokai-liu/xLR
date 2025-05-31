@@ -42,7 +42,7 @@ GrammarEntry *parse(Tokenizer *tokenizer, LRContext *context, ErrInfo *errInfo, 
   Stack *token_stack = Stack_new(allocator);
   uint32_t state = XLR_state_;
   Stack_push(state_stack, &state, sizeof(int32_t));
-  uint32_t status = XLRTokenizer_next(tokenizer, &token, errInfo, allocator);
+  uint32_t status = XLRTokenizer_next(tokenizer, context->in_pattern, &token, errInfo, allocator);
   if (status != XLR_SUCCESS) { return nullptr; }
   while (true) {
     const struct grammar_action *act = getParseAction(state, token.type);
@@ -53,12 +53,11 @@ GrammarEntry *parse(Tokenizer *tokenizer, LRContext *context, ErrInfo *errInfo, 
       state = act->offset;
       Stack_push(token_stack, &token, sizeof(Token));
       Stack_push(state_stack, &state, sizeof(uint32_t));
-      status = XLRTokenizer_next(tokenizer, &token, errInfo, allocator);
+      status = XLRTokenizer_next(tokenizer, context->in_pattern, &token, errInfo, allocator);
       if (status != XLR_SUCCESS) {
         return clean_parse_stack(state_stack, token_stack, allocator);
       }
-      fn_ctx_act *ctxAct = getLRContextAction(state);
-      if (ctxAct) { ctxAct(context, &token); }
+      LRContext_state_action(context, state, &token);
     } else if (act->action == XLR_action_reduce) {
       Stack_pop(token_stack, args, act->count * sizeof(Token));
       Stack_pop(state_stack, nullptr, act->count * sizeof(uint32_t));
@@ -82,8 +81,7 @@ GrammarEntry *parse(Tokenizer *tokenizer, LRContext *context, ErrInfo *errInfo, 
       }
       Stack_push(token_stack, &token, sizeof(Token));
       Stack_push(state_stack, &state, sizeof(uint32_t));
-      fn_ctx_act *ctxAct = getLRContextAction(state);
-      if (ctxAct) { ctxAct(context, &token); }
+      LRContext_state_action(context, state, &token);
       if (act->offset == XLR_RULE_GrammarEntry_EXT) { break; }
     } else {
       // never be touched
@@ -146,7 +144,7 @@ void releaseToken(Token *token, const Allocator *allocator) {
     releaseArrayCase(ActionStatements, ActionStatement)
     releaseArrayCase(GrammarItems, GrammarItem)
     releaseArrayCase(Arguments, Expr)
-    releaseArrayCase(EnumAssignments, EnumAssignment)
+    releaseArrayCase(EnumItems, EnumItem)
     // token
     releaseTokenCase(ActionBlock, ActionBlock)
     releaseTokenCase(RuleDefinition, RuleDefinition)
@@ -160,7 +158,7 @@ void releaseToken(Token *token, const Allocator *allocator) {
     releaseTokenCase(IfStatement, IfStatement)
     releaseTokenCase(DecItem, DecItem)
     releaseTokenCase(WhileStatement, WhileStatement)
-    releaseTokenCase(EnumAssignment, EnumAssignment)
+    releaseTokenCase(EnumItem, EnumItem)
     releaseTokenCase(CondStatement, CondStatement)
     releaseTokenCase(GrammarPattern, GrammarPattern)
     releaseTokenCase(EnumDeclaration, EnumDeclaration)

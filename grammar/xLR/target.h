@@ -28,20 +28,27 @@
 #ifndef XLR_GRAMMAR_XLR_TARGET_H
 #define XLR_GRAMMAR_XLR_TARGET_H
 
-#include "array.h"
+#include "types.h"
+
+typedef char_t Identifier;
 
 typedef struct GrammarEntry {
-uint32_t type
+
 } GrammarEntry;
 
 typedef Array Declarations, ActionStatements;
 
 
-typedef Array GrammarItems, Arguments, EnumAssignments;
+typedef Array GrammarItems, Arguments, EnumItems;
 
 typedef struct ActionBlock {
 
 } ActionBlock, GrammarAction;
+
+typedef struct {
+  REFER(Identifier) name;
+  LRValue *         value;
+} EnumItem;
 
 typedef struct EnumDeclaration {
 
@@ -55,9 +62,7 @@ typedef struct RuleDefinition {
 
 } RuleDefinition;
 
-typedef struct GrammarPattern {
-
-} GrammarPattern;
+typedef GrammarItems GrammarPattern;
 
 typedef struct ActionStatement {
 
@@ -68,18 +73,9 @@ typedef struct Condition {
 
 } IfCondition, ForCondition;
 
-typedef struct Declaration {
+typedef LRAttr DecItem, Declaration;
 
-} Declaration;
-
-typedef struct DecItem {
-
-} DecItem;
-
-typedef struct GrammarItem {
-
-} GrammarItem;
-
+typedef const void GrammarItem;
 
 struct Expression {
   uint32_t type;
@@ -92,7 +88,6 @@ typedef struct Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, A
 typedef struct Expression AssignExpr, Assignable, Accessed, Subscribed;
 typedef struct Expression Evaluable, IntegratedExpr, FunctionCall;
 typedef struct Expression OptionalAssignExpr, OptionalCondExpr;
-typedef AssignExpr EnumAssignment;
 
 void releaseActionBlock(ActionBlock *, const Allocator *);
 void releaseRuleDefinition(RuleDefinition *, const Allocator *);
@@ -106,7 +101,7 @@ void releaseGrammarItem(GrammarItem *, const Allocator *);
 void releaseIfStatement(IfStatement *, const Allocator *);
 void releaseDecItem(DecItem *, const Allocator *);
 void releaseWhileStatement(WhileStatement *, const Allocator *);
-void releaseEnumAssignment(EnumAssignment *, const Allocator *);
+void releaseEnumItem(EnumItem *, const Allocator *);
 void releaseCondStatement(CondStatement *, const Allocator *);
 void releaseGrammarPattern(GrammarPattern *, const Allocator *);
 void releaseEnumDeclaration(EnumDeclaration *, const Allocator *);

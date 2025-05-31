@@ -28,6 +28,7 @@
 #include "tokenizer.h"
 #include "tokenize.h"
 #include "xLR/tokens.h"
+#include "generated/xLR/action-table.gen.h"
 
 typedef struct Tokenizer {
   const Allocator *allocator;
@@ -56,14 +57,17 @@ void XLRTokenizer_destroy(Tokenizer *tokenizer) {
 }
 
 #define pText (tokenizer->src + tokenizer->offset)
-uint32_t XLRTokenizer_next(Tokenizer *tokenizer, Token *token, ErrInfo *errInfo, const Allocator *allocator) {
+uint32_t
+XLRTokenizer_next(Tokenizer *tokenizer, bool in_pattern, Token *token, ErrInfo *errInfo, const Allocator *allocator) {
   tokenizer->offset += pass_space(pText, &tokenizer->lineno, &tokenizer->column);
   Terminal terminal = {};
   terminal.type = XLR_ERROR_BAD_TOKEN;
   terminal.location.lineno = tokenizer->lineno;
   terminal.location.column = tokenizer->column;
   terminal.location.offset = tokenizer->offset;
-  const uint32_t length = action_single_tokenize(pText, &terminal, allocator);
+  const uint32_t length = (in_pattern)
+                        ? pattern_single_tokenize(pText, &terminal, allocator)
+                        : action_single_tokenize(pText, &terminal, allocator);
   if (terminal.type == XLR_TOKEN_BAD_TOKEN) {
     errInfo->pos.lineno = tokenizer->lineno;
     errInfo->pos.column = tokenizer->column;

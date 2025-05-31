@@ -75,7 +75,7 @@ void releaseWhileStatement(WhileStatement *, const Allocator *) {
 
 }
 
-void releaseEnumAssignment(EnumAssignment *, const Allocator *) {
+void releaseEnumItem(EnumItem *, const Allocator *) {
 
 }
 

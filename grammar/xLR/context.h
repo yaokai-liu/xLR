@@ -35,20 +35,8 @@
 #include "trie.h"
 #include "dict.h"
 #include "set.h"
-
-enum XLR_TYPE_ENUM {
-  XLR_TYPE_BAD_TYPE = 0,
-  XLR_TYPE_CHAR,
-  XLR_TYPE_SYMBOL,
-  XLR_TYPE_RULE,
-  XLR_TYPE_ITEM,
-  XLR_TYPE_STATE,
-  XLR_TYPE_ACTION,
-  XLR_TYPE_RULE_KEY,
-  XLR_TYPE_ENV_KEY,
-  XLR_TYPE_USE_KEY,
-  XLR_TYPE_ACT_KEY,
-};
+#include "target.h"
+#include "types.h"
 
 typedef enum SYMBOL_TYPE_ENUM : uint8_t {
   SYMTYPE_BAD_TOKEN,
@@ -135,6 +123,10 @@ typedef struct LRSymbol {
    * otherwise:                 nullptr.
    */
   Dict *envs;
+  /*
+   * attributes defined by TokenDefinition
+   */
+  Array *attr_array; // Array<LRAttr>
 } LRSymbol, LRTerminal;
 
 typedef struct LRRule {
@@ -157,8 +149,13 @@ typedef struct LRContext {
   Array *sym_array;     // Array<LRSymbol>
   AVLTree *sym_tree;    // AVLTree<REFER(char_t), REFER(LRSymbol)>
   Array *rule_array;    // Array<LRRule>
+  AVLTree *rule_tree;   // AVLTree<REFER(char_t), REFER(LRRule)>
   Array *state_array;   // Array<LRState>
+  AVLTree *type_tree;   // AVLTree<REFER(char_t), REFER(LRType)>
+  Array *type_array;    // Array<LRType>
+  Array *enum_array;    // Array<Array<EnumItem>>
   INDEX(LRState) state;
+  bool     in_pattern;
   uint32_t error;
 } LRContext;
 
@@ -172,6 +169,27 @@ int32_t LRAction_cmp(const LRAction *a, const LRAction *b);
 uint64_t LREnvPair_hash(const LREnvPair *pair);
 uint64_t LRActKeyPair_hash(const LRActKeyPair *pair);
 
+#define LRRule_new_items() Array_new(sizeof(INDEX(LRSymbol)), XLR_TYPE_SYMBOL, context->allocator)
+
+#define LRSymbol_new_rules() Array_new(sizeof(LRRulePair), XLR_TYPE_RULE, allocator)
+#define LRSymbol_new_envs() Dict_new(sizeof(LREnvPair), sizeof_set, (unikey_t *) LREnvPair_hash, \
+  XLR_TYPE_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)
+#define LRSymbol_new_firsts() Dict_new(sizeof(INDEX(LRTerminal)), sizeof_set, nullptr, \
+  XLR_TYPE_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, allocator)
+
+#define LRState_new_actions() Dict_new(sizeof(LRActKeyPair), sizeof(LRAction), (unikey_t *) LRActKeyPair_hash, \
+  XLR_TYPE_ACT_KEY, nullptr, (destruct_t *) LRAction_release, context->allocator)
+#define LRContext_new_ruleset() Set_new(sizeof(INDEX(LRRule)), \
+  XLR_TYPE_RULE_KEY, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)
+
+#define LRSymbol_new()  {                     \
+  .symtype = SYMTYPE_TERMINAL,                \
+  .index = Array_length(context->sym_array),  \
+  .rules = nullptr,                           \
+  .firsts = nullptr,                          \
+  .envs = LRSymbol_new_envs()                 \
+}
+
 void LRState_release(LRState *state, const Allocator *allocator);
 void LRAction_release(LRAction *action, const Allocator *allocator);
 void LRRule_release(LRRule *rule, const Allocator *allocator);
@@ -184,8 +202,10 @@ uint32_t LRContext_disable_rule(LRContext *context, INDEX(LRRule) i_rule);
 INDEX(LRRule) LRContext_add_rule(LRContext *context, ErrInfo *errInfo, const char_t *string);
 INDEX(LRSymbol) LRContext_add_target(LRContext *context, ErrInfo *errInfo, const char_t *string);
 
-typedef void fn_ctx_act(LRContext *context, const Token *token);
+void LRContext_state_action(LRContext *context, uint32_t state, Token *);
 
-fn_ctx_act *getLRContextAction(uint32_t state);
+LRValue *LRContext_last_enum_val(LRContext *context, ErrInfo *errInfo);
+INDEX(LRType) LRContext_typeof(LRContext *context, ErrInfo *errInfo, Expr *expr);
+LRValue *LRContext_eval(LRContext *context, ErrInfo *errInfo, Expr *expr);
 
 #endif  // XLR_LR_CONTEXT_H

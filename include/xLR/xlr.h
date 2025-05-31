@@ -55,5 +55,6 @@ typedef struct LRAction {
 
 typedef struct LRContext LRContext;
 #define INDEX(o) uint32_t
+#define refer2index(r) ((uint32_t) (uint64_t) (r))
 
 #endif //XLR_H

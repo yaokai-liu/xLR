@@ -239,35 +239,6 @@ fn_try_keyword_val(sizeof, BUILTIN_FUNCTION, XLR_BF_SIZEOF)
     return length;                                                \
   } while (0)
 
-struct {
-  const char_t *pattern;
-  uint32_t      value;
-} BUILTIN_TYPES[8] = {
-    {"uint64", XLR_BT_U64},
-    {"uint32", XLR_BT_U32},
-    {"uint16", XLR_BT_U16},
-    {"uint8", XLR_BT_U8 },
-    {"int64", XLR_BT_I64},
-    {"int32", XLR_BT_I32},
-    {"int16", XLR_BT_I16},
-    {"int8", XLR_BT_I8 },
-};
-
-uint32_t try_builtin_int(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
-  uint32_t length = t_IDENTIFIER(input, result, allocator);
-  for (uint32_t i = 0; i < 8; i++) {
-    if (strcmp(BUILTIN_TYPES[i].pattern, result->value) == 0) {
-      result->type = XLR_TOKEN_BUILTIN_TYPE;
-      allocator->free(result->value);
-      result->value = (void *) (uint64_t) BUILTIN_TYPES[i].value;
-      return length;
-    }
-  }
-  return length;
-}
-
 uint32_t tokenize_number(
     const char_t * const input, Terminal * const result, const Allocator * const allocator
 ) {
@@ -305,9 +276,6 @@ uint32_t tokenize_letter_i(
   switch (*input) {
     case 'f': {
       return try_keyword_if(input + 1, 2, result, allocator);
-    }
-    case 'n': {
-      return try_builtin_int(input - 1, result, allocator);
     }
     default: fn_fall_through(1);
   }
