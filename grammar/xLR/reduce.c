@@ -222,56 +222,30 @@ CondStatement * XLR_CondStatement_3 (Token [], LRContext *, ErrInfo *, const All
   return nullptr;
 }
 
-DecItem * XLR_DecItem_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *allocator) {
+Declaration * XLR_Declaration_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
   REFER(Identifier) type_name = args[0].value;
-  REFER(Identifier) attr_name = args[1].value;
+  VarList *variables = args[1].value;
 
-  REFER(LRType) type = AVLTree_get(context->type_tree, (uint64_t) type_name);
+  const REFER(LRType) type = AVLTree_get(context->type_tree, (uint64_t) type_name);
   if (!type) { return nullptr; }
 
-  DecItem *item = allocator->calloc(1, sizeof(DecItem));
-  item->type = type;
-  item->name = attr_name;
-  item->count = nullptr;
-  item->value = nullptr;
+  INDEX(LRType) i_type = (uint32_t) (uint64_t) type;
 
-  return item;
+  Array_foreach(Variable, variables, {
+    if (__element->value && __element->value->type != i_type) { return nullptr; }
+    __element->type = i_type;
+  });
+
+
+  return variables;
 }
 
-DecItem * XLR_DecItem_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *allocator) {
-  REFER(Identifier) type_name = args[0].value;
-  REFER(Identifier) attr_name = args[1].value;
-  ArithExpr *count_expr = args[2].value;
-
-  REFER(LRType) type = AVLTree_get(context->type_tree, (uint64_t) type_name);
-  if (!type) { return nullptr; }
-
-  DecItem *item = allocator->calloc(1, sizeof(DecItem));
-  item->type = type;
-  item->name = attr_name;
-  item->count = count_expr;
-  item->value = nullptr;
-
-  return item;
-}
-
-Declaration * XLR_Declaration_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
-  return args[0].value;
-}
-
-Declaration * XLR_Declaration_1 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
-  DecItem *item = args[0].value;
-  ArithExpr *val_expr = args[1].value;
-  item->value = val_expr;
-  return item;
-}
-
-Declarations * XLR_Declarations_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+Declarations * XLR_Declarations_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
   Declaration *decl = args[0].value;
   Declarations *decls = args[1].value;
 
-  Array_append(decls, decl, 1);
-  allocator->free(decl);
+  Array_concat(decls, decl);
+  releasePrimeArray(decl);
 
   return decls;
 }
@@ -279,10 +253,10 @@ Declarations * XLR_Declarations_0 (Token args[], LRContext *, ErrInfo *, const A
 Declarations * XLR_Declarations_1 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
   Declaration *decl = args[0].value;
 
-  Declarations *decls = Array_new(sizeof(Declaration), XLR_TOKEN_Declaration, allocator);
+  Declarations *decls = Array_new(sizeof(Variable), XLR_TOKEN_Variable, allocator);
 
-  Array_append(decls, decl, 1);
-  allocator->free(decl);
+  Array_concat(decls, decl);
+  releasePrimeArray(decl);
 
   return decls;
 }
@@ -330,24 +304,24 @@ EnumItems * XLR_EnumItems_1 (Token args[], LRContext *, ErrInfo *, const Allocat
 }
 
 EnumDeclaration * XLR_EnumDeclaration_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
-  REFER(Identifier) ident = args[1].value;
+  REFER(Identifier) v_ident = args[1].value;
   EnumItems *items = args[3].value;
 
-  REFER(LRType) v_type = AVLTree_get(context->type_tree, (uint64_t) ident);
+  REFER(LRType) v_type = AVLTree_get(context->type_tree, (uint64_t) v_ident);
   if (v_type) { return nullptr; }
 
   Array_append(context->enum_array, items, 1);
   REFER(Array) v_items = Array_last_virt(context->enum_array);
-  LRType type = {.type = XLR_STRUCT_ENUM, .name = ident, .size = 32, .refer = v_items};
+  LRType type = {.type = XLR_STRUCT_ENUM, .name = v_ident, .size = 32, .refer = v_items};
   Array_append(context->type_array, &type, 1);
   v_type = Array_last_virt(context->type_array);
-  AVLTree_set(context->type_tree, (uint64_t) ident, v_type);
+  AVLTree_set(context->type_tree, (uint64_t) v_ident, v_type);
 
-  return (EnumDeclaration *) XLR_TOKEN_EnumDeclaration;
+  return v_type;
 }
 
 EnumDeclaration * XLR_EnumDeclaration_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
-  REFER(Identifier) ident = args[1].value;
+  REFER(Identifier) v_ident = args[1].value;
   REFER(Identifier) t_name = args[3].value;
   EnumItems *items = args[5].value;
 
@@ -357,17 +331,17 @@ EnumDeclaration * XLR_EnumDeclaration_1 (Token args[], LRContext *context, ErrIn
   if (base->type != XLR_STRUCT_BUILTIN && base->type != XLR_STRUCT_ENUM) { return nullptr; }
   const uint32_t size = base->size;
 
-  REFER(LRType) v_type = AVLTree_get(context->type_tree, (uint64_t) ident);
+  REFER(LRType) v_type = AVLTree_get(context->type_tree, (uint64_t) v_ident);
   if (v_type) { return nullptr; }
 
   Array_append(context->enum_array, items, 1);
   REFER(Array) v_items = Array_last_virt(context->enum_array);
-  LRType type = {.type = XLR_STRUCT_ENUM, .name = ident, .size = size, .refer = v_items};
+  LRType type = {.type = XLR_STRUCT_ENUM, .name = v_ident, .size = size, .refer = v_items};
   Array_append(context->type_array, &type, 1);
   v_type = Array_last_virt(context->type_array);
-  AVLTree_set(context->type_tree, (uint64_t) ident, v_type);
+  AVLTree_set(context->type_tree, (uint64_t) v_ident, v_type);
 
-  return (EnumDeclaration *) XLR_TOKEN_EnumDeclaration;
+  return v_type;
 }
 
 Evaluable * XLR_Evaluable_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
@@ -583,8 +557,106 @@ Subscribed * XLR_Subscribed_0 (Token [], LRContext *, ErrInfo *, const Allocator
   return nullptr;
 }
 
-TokenDefinition * XLR_TokenDefinition_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+Subscriber * XLR_Subscriber_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[1].value;
+}
+
+TokenDefinition * XLR_TokenDefinition_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+  REFER(Identifier) v_ident = args[1].value;
+  Declarations *attrs = args[3].value;
+
+  REFER(LRType) v_type = AVLTree_get(context->type_tree, (uint64_t) v_ident);
+  if (v_type) { return nullptr; }
+
+  uint32_t size = 0;
+  Array_foreach(LRAttr, attrs, {
+    const LRType *type = Array_real_addr(context->type_array, __element->type);
+    size += type->size * (uint32_t) (uint64_t) __element->count->bytes;
+  });
+
+  LRType type = { .type = XLR_STRUCT_TOKEN, .size = size, .name = v_ident, .refer = attrs };
+  Array_append(context->type_array, &type, 1);
+  v_type = Array_last_virt(context->type_array);
+  AVLTree_set(context->type_tree, (uint64_t) v_ident, v_type);
+
+  return v_type;
+}
+
+VarList * XLR_VarList_0 (Token args[], LRContext *, ErrInfo *, const Allocator * allocator) {
+  VarList *list = args[0].value;
+  Variable *var = args[2].value;
+
+  Array_append(list, var, 1);
+  allocator->free(var);
+
+  return list;
+}
+
+VarList * XLR_VarList_1 (Token args[], LRContext *, ErrInfo *, const Allocator * allocator) {
+  Variable *var = args[0].value;
+
+  VarList *list = Array_new(sizeof(Variable), XLR_TOKEN_Variable, allocator);
+
+  Array_append(list, var, 1);
+  allocator->free(var);
+
+  return list;
+}
+
+Variable * XLR_Variable_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  REFER(Identifier) attr_name = args[0].value;
+
+  // TODO: check multi-define for variable
+  Variable *item = allocator->calloc(1, sizeof(Variable));
+  item->type = -1;
+  item->name = attr_name;
+  item->count = nullptr;
+  item->value = nullptr;
+
+  return item;
+}
+
+Variable * XLR_Variable_1 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator) {
+  REFER(Identifier) attr_name = args[0].value;
+  ArithExpr *count_expr = args[1].value;
+
+  // TODO: check multi-define for variable
+  Variable *item = allocator->calloc(1, sizeof(Variable));
+  item->type = -1;
+  item->name = attr_name;
+  item->count = LRContext_eval(context, errInfo, count_expr);
+  item->value = nullptr;
+
+  return (errInfo->code == XLR_SUCCESS) ? item : nullptr;
+}
+
+Variable * XLR_Variable_2 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator) {
+  REFER(Identifier) attr_name = args[0].value;
+  ArithExpr *value = args[2].value;
+
+  // TODO: check multi-define for variable
+  Variable *item = allocator->calloc(1, sizeof(Variable));
+  item->type = -1;
+  item->name = attr_name;
+  item->count = nullptr;
+  item->value = LRContext_eval(context, errInfo, value);
+
+  return item;
+}
+
+Variable * XLR_Variable_3 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator) {
+  REFER(Identifier) attr_name = args[0].value;
+  ArithExpr *count_expr = args[1].value;
+  ArithExpr *value_expr = args[3].value;
+
+  // TODO: check multi-define for variable
+  Variable *item = allocator->calloc(1, sizeof(Variable));
+  item->type = -1;
+  item->name = attr_name;
+  item->count = LRContext_eval(context, errInfo, count_expr);
+  item->value = LRContext_eval(context, errInfo, value_expr);
+
+  return (errInfo->code == XLR_SUCCESS) ? item : nullptr;
 }
 
 WhileStatement * XLR_WhileStatement_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {

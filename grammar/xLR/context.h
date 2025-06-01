@@ -206,6 +206,7 @@ void LRContext_state_action(LRContext *context, uint32_t state, Token *);
 
 LRValue *LRContext_last_enum_val(LRContext *context, ErrInfo *errInfo);
 INDEX(LRType) LRContext_typeof(LRContext *context, ErrInfo *errInfo, Expr *expr);
+bool LRContext_subtype(LRContext *context, ErrInfo *errInfo, Expr *expr, LRType);
 LRValue *LRContext_eval(LRContext *context, ErrInfo *errInfo, Expr *expr);
 
 #endif  // XLR_LR_CONTEXT_H

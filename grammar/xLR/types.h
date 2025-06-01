@@ -1,6 +1,6 @@
 /* License
  *
- * ${PROJ_DESCRIPTION}
+ * xLR - Dynamic LR(1) Grammar Parser
  * Copyright (C) 2025 Yaokai Liu
  *
  * This program is free software: you can redistribute it and/or modify
@@ -55,7 +55,7 @@ typedef struct LRType {
   REFER(char_t) name;
   // if type
   // is XLR_STRUCT_BUILTIN:     nullptr
-  // is XLR_STRUCT_TOKEN:       Array<REFER(LRType)>
+  // is XLR_STRUCT_TOKEN:       Array<LRAttr>
   // is XLR_STRUCT_ENUM:        REFER(Enum)
   void         *refer;
 } LRType;
@@ -68,11 +68,11 @@ typedef struct LRValue {
 
 typedef struct LRAttr {
   // type of attribute
-  REFER(LRType) type;
+  INDEX(LRType) type;
   // name of attribute
   REFER(char_t) name;
-  void *        count;
-  void *        value;
+  LRValue *     count;
+  LRValue *     value;
 } LRAttr;
 
 #endif //XLR_GRAMMAR_XLR_TYPES_H

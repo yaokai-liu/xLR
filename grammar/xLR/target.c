@@ -67,10 +67,6 @@ void releaseIfStatement(IfStatement *, const Allocator *) {
 
 }
 
-void releaseDecItem(DecItem *, const Allocator *) {
-
-}
-
 void releaseWhileStatement(WhileStatement *, const Allocator *) {
 
 }

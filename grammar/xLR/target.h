@@ -36,8 +36,7 @@ typedef struct GrammarEntry {
 
 } GrammarEntry;
 
-typedef Array Declarations, ActionStatements;
-
+typedef Array ActionStatements;
 
 typedef Array GrammarItems, Arguments, EnumItems;
 
@@ -50,13 +49,7 @@ typedef struct {
   LRValue *         value;
 } EnumItem;
 
-typedef struct EnumDeclaration {
-
-} EnumDeclaration;
-
-typedef struct TokenDefinition {
-
-} TokenDefinition;
+typedef LRType EnumDeclaration, TokenDefinition;
 
 typedef struct RuleDefinition {
 
@@ -73,7 +66,8 @@ typedef struct Condition {
 
 } IfCondition, ForCondition;
 
-typedef LRAttr DecItem, Declaration;
+typedef Array VarList, Declaration, Declarations;
+typedef LRAttr Variable;
 
 typedef const void GrammarItem;
 
@@ -85,7 +79,7 @@ struct Expression {
 
 typedef struct Expression Expr, CondExpr, AndCondExpr, SingleCondExpr;
 typedef struct Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;
-typedef struct Expression AssignExpr, Assignable, Accessed, Subscribed;
+typedef struct Expression AssignExpr, Assignable, Accessed, Subscribed, Subscriber;
 typedef struct Expression Evaluable, IntegratedExpr, FunctionCall;
 typedef struct Expression OptionalAssignExpr, OptionalCondExpr;
 
@@ -99,7 +93,7 @@ void releaseIfCondition(IfCondition *, const Allocator *);
 void releaseForStatement(ForStatement *, const Allocator *);
 void releaseGrammarItem(GrammarItem *, const Allocator *);
 void releaseIfStatement(IfStatement *, const Allocator *);
-void releaseDecItem(DecItem *, const Allocator *);
+void releaseVariable(Variable *, const Allocator *);
 void releaseWhileStatement(WhileStatement *, const Allocator *);
 void releaseEnumItem(EnumItem *, const Allocator *);
 void releaseCondStatement(CondStatement *, const Allocator *);

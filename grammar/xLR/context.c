@@ -438,6 +438,10 @@ INDEX(LRType) LRContext_typeof(LRContext *, ErrInfo *, Expr *) {
   return 0;
 }
 
+bool LRContext_subtype(LRContext *, ErrInfo *, Expr *, LRType) {
+  return false;
+}
+
 LRValue * LRContext_eval(LRContext *, ErrInfo *, Expr *) {
   return nullptr;
 }
@@ -445,7 +449,8 @@ LRValue * LRContext_eval(LRContext *, ErrInfo *, Expr *) {
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *) {
   switch (state) {
-    case XLR_state_TokenDefinition_IDENTIFIER_LEFT_PARENTHESIS: { context->in_pattern = true; break; }
+//    case XLR_state_TokenDefinition_IDENTIFIER_LEFT_PARENTHESIS: { context->in_pattern = true; break; }
+    case XLR_state_IDENTIFIER_IDENTIFIER_LEFT_PARENTHESIS: { context->in_pattern = true; break; }
     case XLR_state_IDENTIFIER_IDENTIFIER_GrammarPattern:
     case XLR_state_TokenDefinition_IDENTIFIER_GrammarPattern: { context->in_pattern = false; break; }
     default:{}

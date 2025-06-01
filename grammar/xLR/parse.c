@@ -156,7 +156,6 @@ void releaseToken(Token *token, const Allocator *allocator) {
     releaseTokenCase(ForStatement, ForStatement)
     releaseTokenCase(GrammarItem, GrammarItem)
     releaseTokenCase(IfStatement, IfStatement)
-    releaseTokenCase(DecItem, DecItem)
     releaseTokenCase(WhileStatement, WhileStatement)
     releaseTokenCase(EnumItem, EnumItem)
     releaseTokenCase(CondStatement, CondStatement)
