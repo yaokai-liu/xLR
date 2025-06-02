@@ -29,6 +29,7 @@
 #define XLR_GRAMMAR_XLR_TARGET_H
 
 #include "types.h"
+#include "avl-tree.h"
 
 typedef char_t Identifier;
 
@@ -38,11 +39,11 @@ typedef struct GrammarEntry {
 
 typedef Array ActionStatements;
 
-typedef Array GrammarItems, Arguments, EnumItems;
+typedef const void GrammarItem; // REFER(const LRSymbol)
+typedef Array GrammarItems; // Array<GrammarItem>
+typedef GrammarItems GrammarPattern;
 
-typedef struct ActionBlock {
-
-} ActionBlock, GrammarAction;
+typedef Array Arguments, EnumItems;
 
 typedef struct {
   REFER(Identifier) name;
@@ -51,25 +52,37 @@ typedef struct {
 
 typedef LRType EnumDeclaration, TokenDefinition;
 
-typedef struct RuleDefinition {
+typedef LRRule RuleDefinition;
 
-} RuleDefinition;
+typedef struct Expression Expr, CondExpr, SingleCondExpr;
+typedef struct Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;
+typedef struct Expression AssignExpr, Assignable, Accessed, Subscribed, Subscriber;
+typedef struct Expression Evaluable, IntegratedExpr, FunctionCall;
+typedef struct Expression OptionalAssignExpr, OptionalCondExpr;
 
-typedef GrammarItems GrammarPattern;
+typedef LRVariable Variable;
+typedef Array VarList, Declaration, Declarations; // Array<LRVariable>
 
-typedef struct ActionStatement {
+typedef struct ActionBlock ActionBlock;
+struct ActionBlock {
+  REFER(ActionBlock) parent;
+  AVLTree *var_tree;  // AVLTree<REFER(Identifier), REFER(LRVariable)>
+  Array   *var_array; // Array<LRVariable>
+  Array   *subblocks;  // Array<INDEX(ActionBlock)>
+  Array   *commands;
+};
 
-} ActionStatement, CondStatement;
+typedef struct ActionStatement ActionStatement, CondStatement;
+
 typedef struct ActionStatement IfStatement, ForStatement, WhileStatement;
 
-typedef struct Condition {
+struct ActionStatement {
+  uint32_t type;
+  CondExpr *condition;
+  void *action;
+};
 
-} IfCondition, ForCondition;
-
-typedef Array VarList, Declaration, Declarations;
-typedef LRAttr Variable;
-
-typedef const void GrammarItem;
+typedef CondExpr IfCondition, ForCondition;
 
 struct Expression {
   uint32_t type;
@@ -77,11 +90,7 @@ struct Expression {
   void *rhs;
 };
 
-typedef struct Expression Expr, CondExpr, AndCondExpr, SingleCondExpr;
-typedef struct Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;
-typedef struct Expression AssignExpr, Assignable, Accessed, Subscribed, Subscriber;
-typedef struct Expression Evaluable, IntegratedExpr, FunctionCall;
-typedef struct Expression OptionalAssignExpr, OptionalCondExpr;
+ActionBlock *ActionBlock_new(const Allocator *allocator);
 
 void releaseActionBlock(ActionBlock *, const Allocator *);
 void releaseRuleDefinition(RuleDefinition *, const Allocator *);

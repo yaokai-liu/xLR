@@ -326,6 +326,7 @@ LRContext *LRContext_new(const Allocator *allocator) {
   context->ident_trie = Trie_new(sizeof(char_t), char2u64, allocator);
   context->type_array = Array_new(sizeof(LRType), XLR_TYPE_TYPE, allocator);
   context->enum_array = Array_new(sizeof_array, XLR_TYPE_ENUM, allocator);
+  context->block_array = Array_new(sizeof(ActionBlock), XLR_TYPE_ENUM, allocator);
   context->rule_tree = AVLTree_new(allocator, nullptr);
   context->type_tree = AVLTree_new(allocator, nullptr);
   context->sym_tree = AVLTree_new(allocator, nullptr);
@@ -447,12 +448,40 @@ LRValue * LRContext_eval(LRContext *, ErrInfo *, Expr *) {
 }
 
 
-void LRContext_state_action(LRContext *context, uint32_t state, Token *) {
+void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {
   switch (state) {
 //    case XLR_state_TokenDefinition_IDENTIFIER_LEFT_PARENTHESIS: { context->in_pattern = true; break; }
-    case XLR_state_IDENTIFIER_IDENTIFIER_LEFT_PARENTHESIS: { context->in_pattern = true; break; }
+    case XLR_state_IDENTIFIER_IDENTIFIER_LEFT_PARENTHESIS: {
+      context->in_pattern = true; break;
+    }
     case XLR_state_IDENTIFIER_IDENTIFIER_GrammarPattern:
-    case XLR_state_TokenDefinition_IDENTIFIER_GrammarPattern: { context->in_pattern = false; break; }
+    case XLR_state_TokenDefinition_IDENTIFIER_GrammarPattern: {
+      context->in_pattern = false; break;
+    }
+    case XLR_state_IDENTIFIER_IDENTIFIER_GrammarPattern_LEFT_BRACKET: {
+      ActionBlock *block = ActionBlock_new(allocator);
+      Array_append(context->block_array, block, 1);
+      context->curr_block = Array_last_virt(context->block_array);
+      break;
+    }
+    case XLR_state_IDENTIFIER_IDENTIFIER_GrammarPattern_LEFT_BRACKET_LEFT_BRACKET:
+    case XLR_state_IDENTIFIER_IDENTIFIER_GrammarPattern_LEFT_BRACKET_CondStatement_ELSE_LEFT_BRACKET: {
+      ActionBlock *block = ActionBlock_new(allocator);
+      block->parent = context->curr_block;
+      Array_append(context->block_array, block, 1);
+      context->curr_block = Array_last_virt(context->block_array);
+      break;
+    }
+    case XLR_state_IDENTIFIER_IDENTIFIER_GrammarPattern_LEFT_BRACKET_ActionBlock:
+    case XLR_state_IDENTIFIER_IDENTIFIER_GrammarPattern_LEFT_BRACKET_CondStatement_ELSE_ActionBlock: {
+      const ActionBlock *block = Array_virt2real(context->block_array, context->curr_block);
+      context->curr_block = block->parent;
+      break;
+    }
+    case XLR_state_IDENTIFIER_IDENTIFIER_GrammarPattern_ActionBlock: {
+      context->curr_block = nullptr;
+      break;
+    }
     default:{}
   }
 }

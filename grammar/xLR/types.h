@@ -55,7 +55,7 @@ typedef struct LRType {
   REFER(char_t) name;
   // if type
   // is XLR_STRUCT_BUILTIN:     nullptr
-  // is XLR_STRUCT_TOKEN:       Array<LRAttr>
+  // is XLR_STRUCT_TOKEN:       Array<LRVariable>
   // is XLR_STRUCT_ENUM:        REFER(Enum)
   void         *refer;
 } LRType;
@@ -66,13 +66,18 @@ typedef struct LRValue {
   void *        bytes;
 } LRValue;
 
-typedef struct LRAttr {
+typedef struct LRVariable {
   // type of attribute
   INDEX(LRType) type;
   // name of attribute
   REFER(char_t) name;
   LRValue *     count;
   LRValue *     value;
-} LRAttr;
+} LRVariable;
+
+typedef struct LRSymbol LRSymbol;
+typedef struct LRState LRState;
+typedef struct LRItem LRItem;
+typedef struct LRRule LRRule;
 
 #endif //XLR_GRAMMAR_XLR_TYPES_H

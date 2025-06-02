@@ -25,7 +25,6 @@
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#include <stdint-gcc.h>
 #include "target.h"
 #include "enum.h"
 #include "generated/xLR/rules.gen.h"
@@ -50,8 +49,17 @@
     }                                                   \
   } while (false)
 
-Accessed * XLR_Accessed_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+Accessed * XLR_Accessed_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  ArithExpr *lhs = args[0].value;
+  uint32_t optype = (uint64_t) args[1].value;
+  ArithExpr *rhs = args[2].value;
+
+  SingleCondExpr *expr = allocator->calloc(1, sizeof(Expr));
+  expr->type = optype;
+  expr->lhs = lhs;
+  expr->rhs = rhs;
+
+  return expr;
 }
 
 ActionBlock * XLR_ActionBlock_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
@@ -62,12 +70,31 @@ ActionStatement * XLR_ActionStatement_0 (Token [], LRContext *, ErrInfo *, const
   return nullptr;
 }
 
-ActionStatement * XLR_ActionStatement_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+ActionStatement * XLR_ActionStatement_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *allocator) {
+  REFER(ActionBlock) v_block = args[0].value;
+
+  INDEX(ActionBlock) i_block = refer2index(v_block);
+  Array_append(context->curr_block->subblocks, &i_block, 1);
+
+  ActionStatement *statement = allocator->calloc(1, sizeof(ActionStatement));
+  statement->type = XLR_TOKEN_ActionBlock;
+  statement->condition = nullptr;
+  statement->action = v_block;
+
+  return statement;
 }
 
-ActionStatement * XLR_ActionStatement_2 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+ActionStatement * XLR_ActionStatement_2 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+  Declaration *vars = args[0].value;
+
+  ActionBlock *block = context->curr_block;
+  Array_foreach(Variable, vars, {
+    REFER(Variable) v_var = AVLTree_get(block->var_tree, (uint64_t) __element->name);
+    if (!v_var) { return nullptr; }
+  });
+  Array_concat(block->var_array, vars);
+
+  return (ActionStatement *) XLR_TOKEN_ActionStatement;
 }
 
 ActionStatement * XLR_ActionStatement_3 (Token [], LRContext *, ErrInfo *, const Allocator *) {
@@ -83,14 +110,6 @@ ActionStatements * XLR_ActionStatements_1 (Token [], LRContext *, ErrInfo *, con
 }
 
 ActionStatements * XLR_ActionStatements_2 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
-}
-
-AndCondExpr * XLR_AndCondExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
-}
-
-AndCondExpr * XLR_AndCondExpr_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
   return nullptr;
 }
 
@@ -190,12 +209,12 @@ Assignable * XLR_Assignable_0 (Token [], LRContext *, ErrInfo *, const Allocator
   return nullptr;
 }
 
-Assignable * XLR_Assignable_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+Assignable * XLR_Assignable_1 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
-Assignable * XLR_Assignable_2 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+Assignable * XLR_Assignable_2 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
 CondExpr * XLR_CondExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
@@ -372,24 +391,20 @@ FunctionCall * XLR_FunctionCall_0 (Token [], LRContext *, ErrInfo *, const Alloc
   return nullptr;
 }
 
-GrammarAction * XLR_GrammarAction_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+GrammarEntry * XLR_GrammarEntry_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
-GrammarEntry * XLR_GrammarEntry_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+GrammarEntry * XLR_GrammarEntry_1 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
-GrammarEntry * XLR_GrammarEntry_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+GrammarEntry * XLR_GrammarEntry_2 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
-GrammarEntry * XLR_GrammarEntry_2 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
-}
-
-GrammarEntry * XLR_GrammarEntry_EXT (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+GrammarEntry * XLR_GrammarEntry_EXT (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
 GrammarItem * XLR_GrammarItem_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
@@ -472,24 +487,27 @@ GrammarItem * XLR_GrammarItem_2 (Token args[], LRContext *context, ErrInfo *, co
 
 GrammarItems * XLR_GrammarItems_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
   GrammarItems *items = args[0].value;
-  REFER(GrammarItem) *item = args[1].value;
+  REFER(GrammarItem) item = args[1].value;
 
-  Array_append(items, item, 1);
+  INDEX(LRSymbol) i_item = refer2index(item);
+  Array_append(items, &i_item, 1);
 
   return items;
 }
 
 GrammarItems * XLR_GrammarItems_1 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
-  REFER(GrammarItem) *item = args[0].value;
+  REFER(GrammarItem) item = args[0].value;
 
-  GrammarItems *items = Array_new(sizeof(REFER(GrammarItem)), XLR_TYPE_SYMBOL, allocator);
-  Array_append(items, item, 1);
+  GrammarItems *items = Array_new(sizeof(INDEX(GrammarItem)), XLR_TYPE_SYMBOL, allocator);
+
+  INDEX(LRSymbol) i_item = refer2index(item);
+  Array_append(items, &i_item, 1);
 
   return items;
 }
 
 GrammarItems * XLR_GrammarItems_2 (Token [], LRContext *, ErrInfo *, const Allocator *allocator) {
-  return Array_new(sizeof(REFER(GrammarItem)), XLR_TYPE_SYMBOL, allocator);
+  return Array_new(sizeof(INDEX(GrammarItem)), XLR_TYPE_SYMBOL, allocator);
 }
 
 GrammarPattern * XLR_GrammarPattern_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
@@ -497,64 +515,125 @@ GrammarPattern * XLR_GrammarPattern_0 (Token args[], LRContext *, ErrInfo *, con
   return syms;
 }
 
-IfCondition * XLR_IfCondition_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+IfCondition * XLR_IfCondition_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
-IfStatement * XLR_IfStatement_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+IfStatement * XLR_IfStatement_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  CondExpr *condition = args[1].value;
+  ActionStatement *action = args[2].value;
+
+  IfStatement *statement = allocator->calloc(1, sizeof(IfStatement));
+  statement->condition = condition;
+  statement->action = action;
+
+  return statement;
 }
 
-IntegratedExpr * XLR_IntegratedExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+IntegratedExpr * XLR_IntegratedExpr_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
-IntegratedExpr * XLR_IntegratedExpr_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+IntegratedExpr * XLR_IntegratedExpr_1 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
-OptionalAssignExpr * XLR_OptionalAssignExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+OptionalAssignExpr * XLR_OptionalAssignExpr_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
 OptionalAssignExpr * XLR_OptionalAssignExpr_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+  return (OptionalAssignExpr *) XLR_TOKEN_OptionalAssignExpr;
 }
 
-OptionalCondExpr * XLR_OptionalCondExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+OptionalCondExpr * XLR_OptionalCondExpr_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
 OptionalCondExpr * XLR_OptionalCondExpr_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+  return (OptionalCondExpr *) XLR_TOKEN_OptionalCondExpr;
 }
 
-RuleDefinition * XLR_RuleDefinition_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+RuleDefinition * XLR_RuleDefinition_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+  REFER(LRType) *v_type = args[0].value;
+  REFER(Identifier) *v_ident = args[1].value;
+  GrammarPattern *pattern = args[2].value;
+  ActionBlock *action = args[3].value;
+
+  REFER(LRRule) v_rule = AVLTree_get(context->rule_tree, (uint64_t) v_ident);
+  if (v_rule) { return nullptr; }
+
+  const LRType *type = Array_virt2real(context->type_array, v_type);
+  REFER(LRSymbol) v_sym = AVLTree_get(context->sym_tree, (uint64_t) type->name);
+  LRRule rule = { .enabled = false, .target = refer2index(v_sym),
+                  .items = pattern, .action = action };
+  Array_append(context->rule_array, &rule, 1);
+  v_rule = Array_last_virt(context->rule_array);
+  AVLTree_set(context->rule_tree, (uint64_t) v_ident, v_rule);
+
+  return v_rule;
 }
 
-RuleDefinition * XLR_RuleDefinition_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+RuleDefinition * XLR_RuleDefinition_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+  REFER(Identifier) *v_type_name = args[0].value;
+  REFER(Identifier) *v_rule_name = args[1].value;
+  GrammarPattern *pattern = args[2].value;
+  ActionBlock *block = args[3].value;
+
+  REFER(LRType) v_type = AVLTree_get(context->type_tree, (uint64_t) v_type_name);
+  if (v_type) { return nullptr; }
+  REFER(LRRule) v_rule = AVLTree_get(context->rule_tree, (uint64_t) v_rule_name);
+  if (v_rule) { return nullptr; }
+
+  REFER(LRSymbol) v_sym = AVLTree_get(context->sym_tree, (uint64_t) v_type_name);
+  LRRule rule = { .enabled = false, .target = refer2index(v_sym),
+      .items = pattern, .action = block };
+  Array_append(context->rule_array, &rule, 1);
+  v_rule = Array_last_virt(context->rule_array);
+  AVLTree_set(context->rule_tree, (uint64_t) v_rule_name, v_rule);
+
+  return v_rule;
 }
 
-SingleCondExpr * XLR_SingleCondExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+SingleCondExpr * XLR_SingleCondExpr_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  uint32_t optype = (uint64_t) args[0].value;
+  SingleCondExpr *rhs = args[1].value;
+
+  Expr *expr = allocator->calloc(1, sizeof(Expr));
+  expr->type = optype;
+  expr->lhs = nullptr;
+  expr->rhs = rhs;
+
+  return expr;
 }
 
-SingleCondExpr * XLR_SingleCondExpr_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+SingleCondExpr * XLR_SingleCondExpr_1 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  ArithExpr *lhs = args[0].value;
+  uint32_t optype = (uint64_t) args[1].value;
+  ArithExpr *rhs = args[2].value;
+
+  SingleCondExpr *expr = allocator->calloc(1, sizeof(Expr));
+  expr->type = optype;
+  expr->lhs = lhs;
+  expr->rhs = rhs;
+
+  return expr;
 }
 
-SingleCondExpr * XLR_SingleCondExpr_2 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+SingleCondExpr * XLR_SingleCondExpr_2 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[1].value;
 }
 
-SingleCondExpr * XLR_SingleCondExpr_3 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
-}
+Subscribed * XLR_Subscribed_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  IntegratedExpr *lhs = args[0].value;
+  Subscriber     *rhs = args[1].value;
 
-Subscribed * XLR_Subscribed_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+  Expr *expr = allocator->calloc(1, sizeof(Expr));
+  expr->type = XLR_TOKEN_Subscribed;
+  expr->lhs = lhs;
+  expr->rhs = rhs;
+
+  return expr;
 }
 
 Subscriber * XLR_Subscriber_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
@@ -569,8 +648,9 @@ TokenDefinition * XLR_TokenDefinition_0 (Token args[], LRContext *context, ErrIn
   if (v_type) { return nullptr; }
 
   uint32_t size = 0;
-  Array_foreach(LRAttr, attrs, {
+  Array_foreach(LRVariable, attrs, {
     const LRType *type = Array_real_addr(context->type_array, __element->type);
+    // TODO: evaluate __element->count to uint32_t
     size += type->size * (uint32_t) (uint64_t) __element->count->bytes;
   });
 
@@ -632,14 +712,14 @@ Variable * XLR_Variable_1 (Token args[], LRContext *context, ErrInfo *errInfo, c
 
 Variable * XLR_Variable_2 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator) {
   REFER(Identifier) attr_name = args[0].value;
-  ArithExpr *value = args[2].value;
+  ArithExpr *value_expr = args[2].value;
 
   // TODO: check multi-define for variable
   Variable *item = allocator->calloc(1, sizeof(Variable));
   item->type = -1;
   item->name = attr_name;
   item->count = nullptr;
-  item->value = LRContext_eval(context, errInfo, value);
+  item->value = LRContext_eval(context, errInfo, value_expr);
 
   return item;
 }

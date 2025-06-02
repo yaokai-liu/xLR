@@ -59,6 +59,8 @@ uint32_t tokenize_symbol_EQUAL(const char_t *input, Terminal *result, const Allo
 uint32_t tokenize_symbol_GT(const char_t *input, Terminal *result, const Allocator *allocator);
 uint32_t tokenize_symbol_LT(const char_t *input, Terminal *result, const Allocator *allocator);
 uint32_t tokenize_symbol_NOT(const char_t *input, Terminal *result, const Allocator *allocator);
+uint32_t tokenize_symbol_PLUS(const char_t *input, Terminal *result, const Allocator *allocator);
+uint32_t tokenize_symbol_MINUS(const char_t *input, Terminal *result, const Allocator *allocator);
 
 
 uint32_t pass_whitespace(const char *input);
@@ -294,6 +296,9 @@ uint32_t tokenize_letter_e(
     const char_t * const input, Terminal * const result, const Allocator * const allocator
 ) {
   switch (*input) {
+    case 'n': {
+      return try_keyword_enum(input + 1, 2, result, allocator);
+    }
     case 'l': {
       return try_keyword_else(input + 1, 2, result, allocator);
     }
@@ -333,8 +338,8 @@ uint32_t tokenize_letter_s(
 uint32_t tokenize_symbol_OR(const char_t *input, Terminal *result, const Allocator *) {
   const char_t *pText =input;
   if (*pText == '|') {
-    result->type = XLR_TOKEN_BOOL_OR;
-    result->value = nullptr;
+    result->type = XLR_TOKEN_COND_BIN_OP;
+    result->value = (void *) (uint64_t) XLR_CB_OR;
     result->length = 2;
   } else {
     result->type = XLR_TOKEN_ARITH_2_BIN_OP;
@@ -346,8 +351,8 @@ uint32_t tokenize_symbol_OR(const char_t *input, Terminal *result, const Allocat
 uint32_t tokenize_symbol_AND(const char_t *input, Terminal *result, const Allocator *) {
   const char_t *pText =input;
   if (*pText == '&') {
-    result->type = XLR_TOKEN_BOOL_AND;
-    result->value = nullptr;
+    result->type = XLR_TOKEN_COND_BIN_OP;
+    result->value = (void *) (uint64_t) XLR_CB_AND;
     result->length = 2;
   } else {
     result->type = XLR_TOKEN_ARITH_2_BIN_OP;
@@ -359,8 +364,8 @@ uint32_t tokenize_symbol_AND(const char_t *input, Terminal *result, const Alloca
 uint32_t tokenize_symbol_EQUAL(const char_t *input, Terminal *result, const Allocator *) {
   const char_t *pText =input;
   if (*pText == '=') {
-    result->type = XLR_TOKEN_COND_BIN_OP;
-    result->value = (void *) (uint64_t) XLR_CB_EQ;
+    result->type = XLR_TOKEN_COMPARE_OP;
+    result->value = (void *) (uint64_t) XLR_COMP_EQ;
     result->length = 2;
   } else {
     result->type = XLR_TOKEN_ASSIGNER;
@@ -372,16 +377,16 @@ uint32_t tokenize_symbol_EQUAL(const char_t *input, Terminal *result, const Allo
 uint32_t tokenize_symbol_GT(const char_t *input, Terminal *result, const Allocator *) {
   const char_t *pText =input;
   if (*pText == '=') {
-    result->type = XLR_TOKEN_COND_BIN_OP;
-    result->value = (void *) (uint64_t) XLR_CB_GE;
+    result->type = XLR_TOKEN_COMPARE_OP;
+    result->value = (void *) (uint64_t) XLR_COMP_GE;
     result->length = 2;
   } else if (*pText == '>') {
     result->type = XLR_TOKEN_ARITH_2_BIN_OP;
     result->value = (void *) (uint64_t) XLR_AB_RSH;
     result->length = 2;
   } else {
-    result->type = XLR_TOKEN_COND_BIN_OP;
-    result->value = (void *) (uint64_t) XLR_CB_GT;
+    result->type = XLR_TOKEN_COMPARE_OP;
+    result->value = (void *) (uint64_t) XLR_COMP_GT;
     result->length = 1;
   }
   return result->length;
@@ -389,16 +394,16 @@ uint32_t tokenize_symbol_GT(const char_t *input, Terminal *result, const Allocat
 uint32_t tokenize_symbol_LT(const char_t *input, Terminal *result, const Allocator *) {
   const char_t *pText =input;
   if (*pText == '=') {
-    result->type = XLR_TOKEN_COND_BIN_OP;
-    result->value = (void *) (uint64_t) XLR_CB_LE;
+    result->type = XLR_TOKEN_COMPARE_OP;
+    result->value = (void *) (uint64_t) XLR_COMP_LE;
     result->length = 2;
   } else if (*pText == '<') {
     result->type = XLR_TOKEN_ARITH_2_BIN_OP;
     result->value = (void *) (uint64_t) XLR_AB_LSH;
     result->length = 2;
   } else {
-    result->type = XLR_TOKEN_COND_BIN_OP;
-    result->value = (void *) (uint64_t) XLR_CB_LT;
+    result->type = XLR_TOKEN_COMPARE_OP;
+    result->value = (void *) (uint64_t) XLR_COMP_LT;
     result->length = 1;
   }
   return result->length;
@@ -406,12 +411,38 @@ uint32_t tokenize_symbol_LT(const char_t *input, Terminal *result, const Allocat
 uint32_t tokenize_symbol_NOT(const char_t *input, Terminal *result, const Allocator *) {
   const char_t *pText =input;
   if (*pText == '=') {
-    result->type = XLR_TOKEN_COND_BIN_OP;
-    result->value = (void *) (uint64_t) XLR_CB_NE;
+    result->type = XLR_TOKEN_COMPARE_OP;
+    result->value = (void *) (uint64_t) XLR_COMP_NE;
     result->length = 2;
   } else {
-    result->type = XLR_TOKEN_BOOL_NOT;
-    result->value = nullptr;
+    result->type = XLR_TOKEN_COND_BIN_OP;
+    result->value = (void *) (uint64_t) XLR_CS_NOT;
+    result->length = 1;
+  }
+  return result->length;
+}
+uint32_t tokenize_symbol_PLUS(const char_t *input, Terminal *result, const Allocator *) {
+  const char_t *pText =input;
+  if (*pText == '+') {
+    result->type = XLR_TOKEN_INTEGRATED_AFFIX_OP;
+    result->value = (void *) (uint64_t) XLR_IAL_INC;
+    result->length = 2;
+  } else {
+    result->type = XLR_TOKEN_ARITH_0_BIN_OP;
+    result->value = (void *) (uint64_t) XLR_AB_ADD;
+    result->length = 1;
+  }
+  return result->length;
+}
+uint32_t tokenize_symbol_MINUS(const char_t *input, Terminal *result, const Allocator *) {
+  const char_t *pText =input;
+  if (*pText == '-') {
+    result->type = XLR_TOKEN_INTEGRATED_AFFIX_OP;
+    result->value = (void *) (uint64_t) XLR_IAL_DEC;
+    result->length = 2;
+  } else {
+    result->type = XLR_TOKEN_COND_BIN_OP;
+    result->value = (void *) (uint64_t) XLR_CS_NOT;
     result->length = 1;
   }
   return result->length;
@@ -421,8 +452,6 @@ const struct {
   uint32_t t_type;
   uint32_t a_type;
 } ARITH_SYM_TYPE_LITERALS[] = {
-    {XLR_TOKEN_ARITH_0_BIN_OP, XLR_AB_ADD},
-    {XLR_TOKEN_ARITH_0_BIN_OP, XLR_AB_SUB},
     {XLR_TOKEN_ARITH_1_BIN_OP, XLR_AB_MUL},
     {XLR_TOKEN_ARITH_1_BIN_OP, XLR_AB_DIV},
     {XLR_TOKEN_ARITH_1_BIN_OP, XLR_AB_MOD},
@@ -432,7 +461,7 @@ const struct {
 uint32_t tokenize_arith_single_symbols(
     const char_t * const input, Terminal * const result, const Allocator * const
 ) {
-  constexpr char_t ARITH_SYM_LITERALS[] = "+-*/%^~";
+  constexpr char_t ARITH_SYM_LITERALS[] = "*/%^~";
   uint32_t length = stridx_o(*input, ARITH_SYM_LITERALS);
   if (length < lenof(ARITH_SYM_LITERALS)) {
     result->type = ARITH_SYM_TYPE_LITERALS[length].t_type;
@@ -490,6 +519,8 @@ inline uint32_t action_single_tokenize(
     case '>': return tokenize_symbol_GT(input + 1, result, allocator);
     case '<': return tokenize_symbol_LT(input + 1, result, allocator);
     case '!': return tokenize_symbol_NOT(input + 1, result, allocator);
+    case '+': return tokenize_symbol_PLUS(input + 1, result, allocator);
+    case '-': return tokenize_symbol_MINUS(input + 1, result, allocator);
     default: {
     }
   }

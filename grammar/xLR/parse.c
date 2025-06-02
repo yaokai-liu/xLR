@@ -57,7 +57,7 @@ GrammarEntry *parse(Tokenizer *tokenizer, LRContext *context, ErrInfo *errInfo, 
       if (status != XLR_SUCCESS) {
         return clean_parse_stack(state_stack, token_stack, allocator);
       }
-      LRContext_state_action(context, state, &token);
+      LRContext_state_action(context, state, &token, allocator);
     } else if (act->action == XLR_action_reduce) {
       Stack_pop(token_stack, args, act->count * sizeof(Token));
       Stack_pop(state_stack, nullptr, act->count * sizeof(uint32_t));
@@ -81,7 +81,7 @@ GrammarEntry *parse(Tokenizer *tokenizer, LRContext *context, ErrInfo *errInfo, 
       }
       Stack_push(token_stack, &token, sizeof(Token));
       Stack_push(state_stack, &state, sizeof(uint32_t));
-      LRContext_state_action(context, state, &token);
+      LRContext_state_action(context, state, &token, allocator);
       if (act->offset == XLR_RULE_GrammarEntry_EXT) { break; }
     } else {
       // never be touched
@@ -161,10 +161,8 @@ void releaseToken(Token *token, const Allocator *allocator) {
     releaseTokenCase(CondStatement, CondStatement)
     releaseTokenCase(GrammarPattern, GrammarPattern)
     releaseTokenCase(EnumDeclaration, EnumDeclaration)
-    releaseTokenCase(GrammarAction, ActionBlock)
     releaseTokenCase(ForCondition, ForCondition)
     case XLR_TOKEN_CondExpr:
-    case XLR_TOKEN_AndCondExpr:
     case XLR_TOKEN_SingleCondExpr:
     case XLR_TOKEN_ArithExpr:
     case XLR_TOKEN_Arith_0_Expr:

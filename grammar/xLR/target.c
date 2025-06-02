@@ -26,6 +26,15 @@
  **/
 
 #include "target.h"
+#include "xLR/tokens.h"
+
+ActionBlock *ActionBlock_new(const Allocator *allocator) {
+  ActionBlock *block = allocator->calloc(1, sizeof(ActionBlock));
+  block->var_tree = AVLTree_new(allocator, nullptr);
+  block->var_array = Array_new(sizeof(Variable), XLR_TOKEN_Variable, allocator);
+  block->subblocks = Array_new(sizeof(INDEX(ActionBlock)), XLR_TOKEN_ActionBlock, allocator);
+  return block;
+}
 
 void releaseActionBlock(ActionBlock *, const Allocator *) {
 

@@ -62,11 +62,6 @@ enum BUILTIN_STATE_INDEX_ENUM {
   STA_INDEX_BASIC_STATE = 1,
 };
 
-typedef struct LRSymbol LRSymbol;
-typedef struct LRState LRState;
-typedef struct LRItem LRItem;
-typedef struct LRRule LRRule;
-
 typedef struct LRRulePair {
   bool enabled;
   INDEX(LRRule) rule;
@@ -126,13 +121,14 @@ typedef struct LRSymbol {
   /*
    * attributes defined by TokenDefinition
    */
-  Array *attr_array; // Array<LRAttr>
+  Array *attr_array; // Array<LRVariable>
 } LRSymbol, LRTerminal;
 
 typedef struct LRRule {
-  Array *items;  // Array<INDEX(LRSymbol)>
-  INDEX(LRSymbol) target;
   bool enabled;
+  INDEX(LRSymbol) target;
+  Array *items;  // Array<INDEX(LRSymbol)>
+  ActionBlock *action;
 } LRRule;
 
 typedef struct LRItem {
@@ -154,6 +150,8 @@ typedef struct LRContext {
   AVLTree *type_tree;   // AVLTree<REFER(char_t), REFER(LRType)>
   Array *type_array;    // Array<LRType>
   Array *enum_array;    // Array<Array<EnumItem>>
+  Array *block_array;   // Array<ActionBlock>
+  ActionBlock *curr_block;
   INDEX(LRState) state;
   bool     in_pattern;
   uint32_t error;
@@ -202,7 +200,7 @@ uint32_t LRContext_disable_rule(LRContext *context, INDEX(LRRule) i_rule);
 INDEX(LRRule) LRContext_add_rule(LRContext *context, ErrInfo *errInfo, const char_t *string);
 INDEX(LRSymbol) LRContext_add_target(LRContext *context, ErrInfo *errInfo, const char_t *string);
 
-void LRContext_state_action(LRContext *context, uint32_t state, Token *);
+void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator);
 
 LRValue *LRContext_last_enum_val(LRContext *context, ErrInfo *errInfo);
 INDEX(LRType) LRContext_typeof(LRContext *context, ErrInfo *errInfo, Expr *expr);
