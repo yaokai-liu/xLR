@@ -255,7 +255,6 @@ Declaration * XLR_Declaration_0 (Token args[], LRContext *context, ErrInfo *, co
     __element->type = i_type;
   });
 
-
   return variables;
 }
 
@@ -363,19 +362,23 @@ EnumDeclaration * XLR_EnumDeclaration_1 (Token args[], LRContext *context, ErrIn
   return v_type;
 }
 
-Evaluable * XLR_Evaluable_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+Evaluable * XLR_Evaluable_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
-Evaluable * XLR_Evaluable_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+Evaluable * XLR_Evaluable_1 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
-Evaluable * XLR_Evaluable_2 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+Evaluable * XLR_Evaluable_2 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[0].value;
 }
 
 Evaluable * XLR_Evaluable_3 (Token [], LRContext *, ErrInfo *, const Allocator *) {
+  return nullptr;
+}
+
+Evaluable * XLR_Evaluable_4 (Token [], LRContext *, ErrInfo *, const Allocator *) {
   return nullptr;
 }
 

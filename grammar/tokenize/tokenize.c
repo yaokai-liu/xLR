@@ -25,21 +25,23 @@
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#include <string.h>
+#include "enum.h"
+#include "string_t.h"
 #include "xLR/token.h"
 #include "xLR/tokens.h"
-#include "string_t.h"
-#include "enum.h"
+#include "xLR/types.h"
+#include <stdlib.h>
 
 #define lenof(str_literal) ((sizeof str_literal) - 1)
 #define max(a, b)          ((a) > (b) ? (a) : (b))
 #define min(a, b)          ((a) < (b) ? (a) : (b))
 
+uint32_t t_FLOAT(const char_t *input, Terminal *result, const Allocator *allocator);
 uint32_t t_IDENTIFIER(const char_t *input, Terminal *result, const Allocator *allocator);
-uint32_t t_NUMBER_adic16(const char_t *input, Terminal *result, const Allocator *allocator);
-uint32_t t_NUMBER_adic10(const char_t *input, Terminal *result, const Allocator *allocator);
-uint32_t t_NUMBER_adic8(const char_t *input, Terminal *result, const Allocator *allocator);
-uint32_t t_NUMBER_adic2(const char_t *input, Terminal *result, const Allocator *allocator);
+uint32_t t_INTEGER_adic16(const char_t *input, Terminal *result, const Allocator *allocator);
+uint32_t t_INTEGER_adic10(const char_t *input, Terminal *result, const Allocator *allocator);
+uint32_t t_INTEGER_adic8(const char_t *input, Terminal *result, const Allocator *allocator);
+uint32_t t_INTEGER_adic2(const char_t *input, Terminal *result, const Allocator *allocator);
 uint32_t try_keyword_if(const char_t *input, uint32_t offs, Terminal *result, const Allocator *allocator);
 uint32_t try_keyword_for(const char_t *input, uint32_t offs, Terminal *result, const Allocator *allocator);
 uint32_t try_keyword_else(const char_t *input, uint32_t offs, Terminal *result, const Allocator *allocator);
@@ -62,15 +64,44 @@ uint32_t tokenize_symbol_NOT(const char_t *input, Terminal *result, const Alloca
 uint32_t tokenize_symbol_PLUS(const char_t *input, Terminal *result, const Allocator *allocator);
 uint32_t tokenize_symbol_MINUS(const char_t *input, Terminal *result, const Allocator *allocator);
 
-
 uint32_t pass_whitespace(const char *input);
 
 #define startswithDigital(pText) ('0' <= (pText)[0] && (pText)[0] <= '9')
 #define startswithLetter(pText)  (('a' <= (pText)[0] && (pText)[0] <= 'z') || ('A' <= (pText)[0] && (pText)[0] <= 'Z'))
-#define isIdentCase(pText)  (startswithLetter(pText) || startswithDigital(pText) || (*pText == '_'))
+#define isIdentCase(pText)       (startswithLetter(pText) || startswithDigital(pText) || (*pText == '_'))
+#define normalIntegerSuffixUnless(bad_cond)               \
+  do {                                                    \
+    uint32_t size = 4;                                    \
+    switch (*pText) {                                     \
+      case 'l':                                           \
+      case 'L': { size = 8; pText++; break; }             \
+      default: {}                                         \
+    }                                                     \
+    uint32_t type = XLR_VAL_INTEGER_SIGNED;               \
+    switch (*pText) {                                     \
+      case 'u':                                           \
+      case 'U': {                                         \
+        type = XLR_VAL_INTEGER_UNSIGNED;                  \
+        pText++; break;                                   \
+      }                                                   \
+      default: {}                                         \
+    }                                                     \
+    if (bad_cond) {                                       \
+      result->length = pText - input;                     \
+      return 0;                                           \
+    }                                                     \
+    LRValue *val = allocator->calloc(1, sizeof(LRValue)); \
+    val->bytes = (void *) (uint64_t) value;               \
+    val->type = type;                                     \
+    val->size = size;                                     \
+    result->type = XLR_TOKEN_INTEGER;                     \
+    result->length = pText - input;                       \
+    result->value = val;                                  \
+    return result->length;                                \
+  } while (false)
 
-
-inline uint32_t t_NUMBER_adic16(const char_t * const input, Terminal * const result, const Allocator * const) {
+uint32_t t_INTEGER_adic16(const char_t * const input, Terminal * const result,
+                                 const Allocator * const allocator) {
   const char_t *pText = input;
   uint64_t value = 0LL;
   while (true) {
@@ -80,94 +111,77 @@ inline uint32_t t_NUMBER_adic16(const char_t * const input, Terminal * const res
       value = (value << 4) + (*pText++ - 'a' + 0xa);  // NOLINT(*-magic-numbers)
     } else if ('A' <= *pText && *pText <= 'F') {
       value = (value << 4) + (*pText++ - 'A' + 0xA);  // NOLINT(*-magic-numbers)
-    } else if (('g' <= *pText && *pText <= 'z') || ('G' <= *pText && *pText <= 'Z') || ('_' == *pText)) {
-      result->length = pText - input;
-      return 0;
-    } else if (*pText == '\'') {
-      pText++;
-    } else {
-      break;
-    }
+    } else { break; }
   }
-  result->type = XLR_TOKEN_NUMBER;
-  result->value = (void *) value;
-  result->length = pText - input;
-  return result->length;
+  normalIntegerSuffixUnless(startswithLetter(pText) || (*pText == '_') || (*pText == '.'));
 }
 
-inline uint32_t t_NUMBER_adic10(const char_t * const input, Terminal * const result, const Allocator * const) {
+uint32_t t_INTEGER_adic10(const char_t * const input, Terminal * const result,
+                                 const Allocator * const allocator) {
   const char_t *pText = input;
   uint64_t value = 0;
   while (true) {
     if (startswithDigital(pText)) {
       value = (value * 10) + (*pText++ - '0');  // NOLINT(*-magic-numbers)
-      continue;
-    }
-    if (startswithLetter(pText)) {
-      result->length = pText - input;
-      return 0;
-    }
-    if (*pText == '\'') {
-      pText++;
-    } else {
-      break;
-    }
+    } else { break; }
   }
-  result->type = XLR_TOKEN_NUMBER;
-  result->value = (void *) value;
-  result->length = pText - input;
-  return result->length;
+  normalIntegerSuffixUnless(startswithLetter(pText) || (*pText == '_') || (*pText == '.'));
 }
 
-inline uint32_t t_NUMBER_adic8(const char_t * const input, Terminal * const result, const Allocator * const) {
+uint32_t t_INTEGER_adic8(const char_t * const input, Terminal * const result,
+                                const Allocator * const allocator) {
   const char_t *pText = input;
   uint64_t value = 0;
   while (true) {
-    if ('0' <= *pText && *pText <= '7') {
-      value = (value << 3) + (*pText++ - '0');
-      continue;
-    }
-    if (('8' == *pText) || ('9' == *pText) || startswithLetter(pText)) {
-      result->length = pText - input;
-      return 0;
-    }
-    if (*pText == '\'') {
-      pText++;
-    } else {
-      break;
-    }
+    if ('0' <= *pText && *pText <= '7') { value = (value << 3) + (*pText++ - '0'); } else { break; }
   }
-  result->type = XLR_TOKEN_NUMBER;
-  result->value = (void *) value;
-  result->length = pText - input;
-  return result->length;
+  normalIntegerSuffixUnless((*pText == '8') || (*pText == '9') ||
+                            (*pText == '_') || (*pText == '.') ||
+                            startswithLetter(pText));
 }
 
-inline uint32_t t_NUMBER_adic2(const char_t * const input, Terminal * const result, const Allocator * const) {
+uint32_t t_INTEGER_adic2(const char_t * const input, Terminal * const result,
+                                const Allocator * const allocator) {
   const char_t *pText = input;
   uint64_t value = 0;
   while (true) {
     if ('0' == *pText || *pText == '1') {
       value = (value << 1) + (*pText++ - '0');
-      continue;
-    }
-    if (('2' <= *pText && *pText <= '9') || startswithLetter(pText)) {
-      result->length = pText - input;
-      return 0;
-    }
-    if (*pText == '\'') {
-      pText++;
-    } else {
-      break;
-    }
+    } else { break; }
   }
-  result->type = XLR_TOKEN_NUMBER;
-  result->value = (void *) value;
+  normalIntegerSuffixUnless(('2' <= *pText && *pText <= '9') ||
+                            (*pText == '_') || (*pText == '.') ||
+                            startswithLetter(pText));
+}
+
+uint32_t t_FLOAT(const char_t * const input, Terminal * const result,
+                                const Allocator * const allocator) {
+  char_t *pText = nullptr;
+  long double decimal = strtold(input, &pText);
+  if (!pText || pText == input) { return 0; }
+  uint32_t size = 8;
+  switch (*pText) {
+    case 'f':
+    case 'F': { size = 4; pText ++; break; }
+    case 'l':
+    case 'L': { size = 16; pText ++; break; }
+    default: {}
+  }
+  if (startswithLetter(pText) || (*pText == '_') || (*pText == '.')) {
+    result->length = pText - input;
+    return 0;
+  }
+  LRValue *val = allocator->calloc(1, sizeof(LRValue));
+  *(long double *) &val->bytes = decimal;
+  val->type = XLR_VAL_FLOAT;
+  val->size = size;
+  result->type = XLR_TOKEN_FLOAT;
   result->length = pText - input;
+  result->value = val;
   return result->length;
 }
 
-inline uint32_t t_IDENTIFIER(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
+uint32_t t_IDENTIFIER(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
   const char_t *pText = input;
   if (startswithLetter(pText) || (*pText == '_')) {
     pText++;
@@ -187,35 +201,35 @@ inline uint32_t t_IDENTIFIER(const char_t * const input, Terminal * const result
   return result->length;
 }
 
-#define fn_try_keyword(_kw, _type)                                                       \
-  inline uint32_t try_keyword_##_kw(const char_t * const input, uint32_t const offs,           \
-                                    Terminal * const result, const Allocator * const allocator) {                 \
-    const char_t pattern[] = string_t(#_kw);                                             \
-    for (uint32_t i = offs; i < sizeof(pattern) - 1; i++) {                                 \
-      if (input[i - offs] != pattern[i]) { goto __failed_kw_##_kw; }                        \
-    }                                                                                    \
-    const char_t * const tail = &input[sizeof(pattern) - 1 - offs];                             \
-    if (startswithLetter(tail) || *tail == '_') { goto __failed_kw_##_kw; }              \
-    result->type = XLR_TOKEN_##_type;                                                    \
-    result->value = nullptr;                                                             \
-    result->length = lenof(#_kw);                                                        \
-    return lenof(#_kw);                                                                  \
-    __failed_kw_##_kw : return t_IDENTIFIER(input - 2, result, allocator);               \
+#define fn_try_keyword(_kw, _type)                                                                      \
+  uint32_t try_keyword_##_kw(const char_t * const input, uint32_t const offs, Terminal * const result,  \
+                                    const Allocator * const allocator) {                                \
+    const char_t pattern[] = string_t(#_kw);                                                            \
+    for (uint32_t i = offs; i < sizeof(pattern) - 1; i++) {                                             \
+      if (input[i - offs] != pattern[i]) { goto __failed_kw_##_kw; }                                    \
+    }                                                                                                   \
+    const char_t * const tail = &input[sizeof(pattern) - 1 - offs];                                     \
+    if (startswithLetter(tail) || *tail == '_') { goto __failed_kw_##_kw; }                             \
+    result->type = XLR_TOKEN_##_type;                                                                   \
+    result->value = nullptr;                                                                            \
+    result->length = lenof(#_kw);                                                                       \
+    return lenof(#_kw);                                                                                 \
+    __failed_kw_##_kw : return t_IDENTIFIER(input - 2, result, allocator);                              \
   }
-#define fn_try_keyword_val(_kw, _type, val)                                              \
-  inline uint32_t try_keyword_##_kw(const char_t * const input, uint32_t const offs,           \
-                                    Terminal * const result, const Allocator * const allocator) {                 \
-    const char_t pattern[] = string_t(#_kw);                                             \
-    for (uint32_t i = offs; i < sizeof(pattern) - 1; i++) {                                 \
-      if (input[i - offs] != pattern[i]) { goto __failed_kw_##_kw; }                        \
-    }                                                                                    \
-    const char_t * const tail = &input[sizeof(pattern) - 1 - offs];                             \
-    if (startswithLetter(tail) || *tail == '_') { goto __failed_kw_##_kw; }              \
-    result->type = XLR_TOKEN_##_type;                                                    \
-    result->value = (void *) val;                                                        \
-    result->length = lenof(#_kw);                                                        \
-    return lenof(#_kw);                                                                  \
-    __failed_kw_##_kw : return t_IDENTIFIER(input - 2, result, allocator);               \
+#define fn_try_keyword_val(_kw, _type, val)                                                             \
+  uint32_t try_keyword_##_kw(const char_t * const input, uint32_t const offs, Terminal * const result,  \
+                                    const Allocator * const allocator) {                                \
+    const char_t pattern[] = string_t(#_kw);                                                            \
+    for (uint32_t i = offs; i < sizeof(pattern) - 1; i++) {                                             \
+      if (input[i - offs] != pattern[i]) { goto __failed_kw_##_kw; }                                    \
+    }                                                                                                   \
+    const char_t * const tail = &input[sizeof(pattern) - 1 - offs];                                     \
+    if (startswithLetter(tail) || *tail == '_') { goto __failed_kw_##_kw; }                             \
+    result->type = XLR_TOKEN_##_type;                                                                   \
+    result->value = (void *) val;                                                                       \
+    result->length = lenof(#_kw);                                                                       \
+    return lenof(#_kw);                                                                                 \
+    __failed_kw_##_kw : return t_IDENTIFIER(input - 2, result, allocator);                              \
   }
 
 fn_try_keyword(if, IF)
@@ -225,7 +239,6 @@ fn_try_keyword(enum, ENUM)
 fn_try_keyword(token, TOKEN)
 fn_try_keyword(while, WHILE)
 fn_try_keyword_val(sizeof, BUILTIN_FUNCTION, XLR_BF_SIZEOF)
-
 
 #define fn_fall_through(len)                                      \
   do {                                                            \
@@ -241,40 +254,44 @@ fn_try_keyword_val(sizeof, BUILTIN_FUNCTION, XLR_BF_SIZEOF)
     return length;                                                \
   } while (0)
 
-uint32_t tokenize_number(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
+uint32_t tokenize_number(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
+  uint32_t length = 0;
   if ('0' == *input) {
-    uint32_t length = 0;
     switch (input[1]) {
       case 'x':
       case 'X': {
-        length = t_NUMBER_adic16(input + 2, result, allocator);
+        length = t_INTEGER_adic16(input + 2, result, allocator);
+        if (!length) { break; }
         result->length += 2;
-        return length > 0 ? result->length : 0;
+        return result->length;
       }
       case 'o':
       case 'O': {
-        length = t_NUMBER_adic8(input + 2, result, allocator);
+        length = t_INTEGER_adic8(input + 2, result, allocator);
         result->length += 2;
         return length > 0 ? result->length : 0;
       }
       case 'b':
       case 'B': {
-        length = t_NUMBER_adic2(input + 2, result, allocator);
+        length = t_INTEGER_adic2(input + 2, result, allocator);
         result->length += 2;
         return length > 0 ? result->length : 0;
       }
       default: {
+        length = t_INTEGER_adic8(input + 1, result, allocator);
+        result->length += 1;
+        return length > 0 ? result->length : 0;
       }
     }
+  } else {
+    length = t_INTEGER_adic10(input, result, allocator);
+    if (length > 0) { return length; }
   }
-  return t_NUMBER_adic10(input, result, allocator);
+  length = t_FLOAT(input, result, allocator);
+  return length;
 }
 
-uint32_t tokenize_letter_i(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
+uint32_t tokenize_letter_i(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
   switch (*input) {
     case 'f': {
       return try_keyword_if(input + 1, 2, result, allocator);
@@ -282,9 +299,7 @@ uint32_t tokenize_letter_i(
     default: fn_fall_through(1);
   }
 }
-uint32_t tokenize_letter_f(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
+uint32_t tokenize_letter_f(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
   switch (*input) {
     case 'o': {
       return try_keyword_for(input + 1, 2, result, allocator);
@@ -292,9 +307,7 @@ uint32_t tokenize_letter_f(
     default: fn_fall_through(1);
   }
 }
-uint32_t tokenize_letter_e(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
+uint32_t tokenize_letter_e(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
   switch (*input) {
     case 'n': {
       return try_keyword_enum(input + 1, 2, result, allocator);
@@ -305,9 +318,7 @@ uint32_t tokenize_letter_e(
     default: fn_fall_through(1);
   }
 }
-uint32_t tokenize_letter_t(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
+uint32_t tokenize_letter_t(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
   switch (*input) {
     case 'o': {
       return try_keyword_token(input + 1, 2, result, allocator);
@@ -315,9 +326,7 @@ uint32_t tokenize_letter_t(
     default: fn_fall_through(1);
   }
 }
-uint32_t tokenize_letter_w(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
+uint32_t tokenize_letter_w(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
   switch (*input) {
     case 'h': {
       return try_keyword_while(input + 1, 2, result, allocator);
@@ -325,9 +334,7 @@ uint32_t tokenize_letter_w(
     default: fn_fall_through(1);
   }
 }
-uint32_t tokenize_letter_s(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
+uint32_t tokenize_letter_s(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
   switch (*input) {
     case 'i': {
       return try_keyword_sizeof(input + 1, 2, result, allocator);
@@ -336,7 +343,7 @@ uint32_t tokenize_letter_s(
   }
 }
 uint32_t tokenize_symbol_OR(const char_t *input, Terminal *result, const Allocator *) {
-  const char_t *pText =input;
+  const char_t *pText = input;
   if (*pText == '|') {
     result->type = XLR_TOKEN_COND_BIN_OP;
     result->value = (void *) (uint64_t) XLR_CB_OR;
@@ -349,7 +356,7 @@ uint32_t tokenize_symbol_OR(const char_t *input, Terminal *result, const Allocat
   return result->length;
 }
 uint32_t tokenize_symbol_AND(const char_t *input, Terminal *result, const Allocator *) {
-  const char_t *pText =input;
+  const char_t *pText = input;
   if (*pText == '&') {
     result->type = XLR_TOKEN_COND_BIN_OP;
     result->value = (void *) (uint64_t) XLR_CB_AND;
@@ -362,7 +369,7 @@ uint32_t tokenize_symbol_AND(const char_t *input, Terminal *result, const Alloca
   return result->length;
 }
 uint32_t tokenize_symbol_EQUAL(const char_t *input, Terminal *result, const Allocator *) {
-  const char_t *pText =input;
+  const char_t *pText = input;
   if (*pText == '=') {
     result->type = XLR_TOKEN_COMPARE_OP;
     result->value = (void *) (uint64_t) XLR_COMP_EQ;
@@ -375,7 +382,7 @@ uint32_t tokenize_symbol_EQUAL(const char_t *input, Terminal *result, const Allo
   return result->length;
 }
 uint32_t tokenize_symbol_GT(const char_t *input, Terminal *result, const Allocator *) {
-  const char_t *pText =input;
+  const char_t *pText = input;
   if (*pText == '=') {
     result->type = XLR_TOKEN_COMPARE_OP;
     result->value = (void *) (uint64_t) XLR_COMP_GE;
@@ -392,7 +399,7 @@ uint32_t tokenize_symbol_GT(const char_t *input, Terminal *result, const Allocat
   return result->length;
 }
 uint32_t tokenize_symbol_LT(const char_t *input, Terminal *result, const Allocator *) {
-  const char_t *pText =input;
+  const char_t *pText = input;
   if (*pText == '=') {
     result->type = XLR_TOKEN_COMPARE_OP;
     result->value = (void *) (uint64_t) XLR_COMP_LE;
@@ -409,7 +416,7 @@ uint32_t tokenize_symbol_LT(const char_t *input, Terminal *result, const Allocat
   return result->length;
 }
 uint32_t tokenize_symbol_NOT(const char_t *input, Terminal *result, const Allocator *) {
-  const char_t *pText =input;
+  const char_t *pText = input;
   if (*pText == '=') {
     result->type = XLR_TOKEN_COMPARE_OP;
     result->value = (void *) (uint64_t) XLR_COMP_NE;
@@ -422,27 +429,27 @@ uint32_t tokenize_symbol_NOT(const char_t *input, Terminal *result, const Alloca
   return result->length;
 }
 uint32_t tokenize_symbol_PLUS(const char_t *input, Terminal *result, const Allocator *) {
-  const char_t *pText =input;
+  const char_t *pText = input;
   if (*pText == '+') {
-    result->type = XLR_TOKEN_INTEGRATED_AFFIX_OP;
+    result->type = XLR_TOKEN_INTEGRATED_OP;
     result->value = (void *) (uint64_t) XLR_IAL_INC;
     result->length = 2;
   } else {
-    result->type = XLR_TOKEN_ARITH_0_BIN_OP;
+    result->type = XLR_TOKEN_ARITH_0_OP;
     result->value = (void *) (uint64_t) XLR_AB_ADD;
     result->length = 1;
   }
   return result->length;
 }
 uint32_t tokenize_symbol_MINUS(const char_t *input, Terminal *result, const Allocator *) {
-  const char_t *pText =input;
+  const char_t *pText = input;
   if (*pText == '-') {
-    result->type = XLR_TOKEN_INTEGRATED_AFFIX_OP;
+    result->type = XLR_TOKEN_INTEGRATED_OP;
     result->value = (void *) (uint64_t) XLR_IAL_DEC;
     result->length = 2;
   } else {
-    result->type = XLR_TOKEN_COND_BIN_OP;
-    result->value = (void *) (uint64_t) XLR_CS_NOT;
+    result->type = XLR_TOKEN_ARITH_0_OP;
+    result->value = (void *) (uint64_t) XLR_AB_SUB;
     result->length = 1;
   }
   return result->length;
@@ -452,15 +459,13 @@ const struct {
   uint32_t t_type;
   uint32_t a_type;
 } ARITH_SYM_TYPE_LITERALS[] = {
-    {XLR_TOKEN_ARITH_1_BIN_OP, XLR_AB_MUL},
-    {XLR_TOKEN_ARITH_1_BIN_OP, XLR_AB_DIV},
-    {XLR_TOKEN_ARITH_1_BIN_OP, XLR_AB_MOD},
-    {XLR_TOKEN_ARITH_2_BIN_OP, XLR_AB_XOR},
-    {XLR_TOKEN_ARITH_2_SIN_OP, XLR_AS_INV},
+  {XLR_TOKEN_ARITH_1_BIN_OP, XLR_AB_MUL},
+  {XLR_TOKEN_ARITH_1_BIN_OP, XLR_AB_DIV},
+  {XLR_TOKEN_ARITH_1_BIN_OP, XLR_AB_MOD},
+  {XLR_TOKEN_ARITH_2_BIN_OP, XLR_AB_XOR},
+  {XLR_TOKEN_ARITH_2_SIN_OP, XLR_AS_INV},
 };
-uint32_t tokenize_arith_single_symbols(
-    const char_t * const input, Terminal * const result, const Allocator * const
-) {
+uint32_t tokenize_arith_single_symbols(const char_t * const input, Terminal * const result, const Allocator * const) {
   constexpr char_t ARITH_SYM_LITERALS[] = "*/%^~";
   uint32_t length = stridx_o(*input, ARITH_SYM_LITERALS);
   if (length < lenof(ARITH_SYM_LITERALS)) {
@@ -472,20 +477,21 @@ uint32_t tokenize_arith_single_symbols(
   return 0;
 }
 constexpr uint32_t TERMINAL_TYPE_LITERALS[] = {
-    XLR_TOKEN_AT,
-    XLR_TOKEN_DOT,
-    XLR_TOKEN_COLON,
-    XLR_TOKEN_COMMA,
-    XLR_TOKEN_SEMICOLON,
-    XLR_TOKEN_QUESTION_MARK,
+  XLR_TOKEN_AT,
+  XLR_TOKEN_DOT,
+  XLR_TOKEN_COLON,
+  XLR_TOKEN_COMMA,
+  XLR_TOKEN_SEMICOLON,
+  XLR_TOKEN_QUESTION_MARK,
 
-    XLR_TOKEN_LEFT_BRACKET, XLR_TOKEN_RIGHT_BRACKET,
-    XLR_TOKEN_LEFT_SQUARE_BRACKET, XLR_TOKEN_RIGHT_SQUARE_BRACKET,
-    XLR_TOKEN_LEFT_PARENTHESIS, XLR_TOKEN_RIGHT_PARENTHESIS,
+  XLR_TOKEN_LEFT_BRACKET,
+  XLR_TOKEN_RIGHT_BRACKET,
+  XLR_TOKEN_LEFT_SQUARE_BRACKET,
+  XLR_TOKEN_RIGHT_SQUARE_BRACKET,
+  XLR_TOKEN_LEFT_PARENTHESIS,
+  XLR_TOKEN_RIGHT_PARENTHESIS,
 };
-uint32_t tokenize_grammar_single_symbols(
-    const char_t * const input, Terminal * const result, const Allocator * const
-) {
+uint32_t tokenize_grammar_single_symbols(const char_t * const input, Terminal * const result, const Allocator * const) {
   constexpr char_t SINGLE_LITERAL[] = "@.:,;?{}[]()";
   uint32_t length = stridx_o(*input, SINGLE_LITERAL);
   if (length < lenof(SINGLE_LITERAL)) {
@@ -497,9 +503,8 @@ uint32_t tokenize_grammar_single_symbols(
   return 0;
 }
 
-inline uint32_t action_single_tokenize(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
+uint32_t action_single_tokenize(const char_t * const input, Terminal * const result,
+                                       const Allocator * const allocator) {
   if (!*input) {
     result->type = XLR_TOKEN_TERMINATOR;
     result->value = nullptr;
@@ -529,13 +534,11 @@ inline uint32_t action_single_tokenize(
     length = tokenize_number(input, result, allocator);
     return length;
   }
-  if (startswithLetter(input)) {
-    length = t_IDENTIFIER(input, result, allocator);
-    return length;
-  }
   length = tokenize_grammar_single_symbols(input, result, allocator);
   if (length > 0) { return length; }
   length = tokenize_arith_single_symbols(input, result, allocator);
+  if (length > 0) { return length; }
+  length = t_IDENTIFIER(input, result, allocator);
   if (length > 0) { return length; }
   result->type = XLR_TOKEN_BAD_TOKEN;
   result->value = nullptr;
@@ -543,9 +546,8 @@ inline uint32_t action_single_tokenize(
   return 0;
 }
 
-inline uint32_t pattern_single_tokenize(
-    const char_t * const input, Terminal * const result, const Allocator * const allocator
-) {
+uint32_t pattern_single_tokenize(const char_t * const input, Terminal * const result,
+                                        const Allocator * const allocator) {
   if (!*input) {
     result->type = XLR_TOKEN_TERMINATOR;
     result->value = nullptr;
@@ -573,7 +575,6 @@ inline uint32_t pattern_single_tokenize(
     }
     default: {}
   }
-  if (!startswithLetter(input)) { return 0; }
   uint32_t length = t_IDENTIFIER(input, result, allocator);
   if (length > 0) { return length; }
   result->type = XLR_TOKEN_BAD_TOKEN;
@@ -582,14 +583,12 @@ inline uint32_t pattern_single_tokenize(
   return 0;
 }
 
-
 uint32_t pass_whitespace(const char_t * const input) {
   const char_t *pText = input;
   while (*pText && stridx_o(*pText, " \t\n\f\v\r") < lenof(" \t\n\f\v\r")) { pText++; }
   return pText - input;
 }
-uint32_t
-try_pass_comment(const char * const input, uint32_t * const lineno, uint32_t * const column) {
+uint32_t try_pass_comment(const char * const input, uint32_t * const lineno, uint32_t * const column) {
   const char *pText = input + 1;
   if (*pText == '/') {
     do { pText++; } while (*pText != '\n');
@@ -639,12 +638,11 @@ uint32_t pass_space(const char * const input, uint32_t * const lineno, uint32_t 
     }
     pText++;
   }
-  __return:
+__return:
   lineno ? *lineno = l : 0;
   column ? *column = c : 0;
   return pText - input;
 }
-
 
 void terminal2Token(Terminal *terminal, Token *token) {
   token->type = terminal->type;

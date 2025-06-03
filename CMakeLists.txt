@@ -55,3 +55,14 @@ target_include_directories(${TARGET_PREFIX}grammar PRIVATE grammar)
 
 add_executable(${TARGET_PREFIX}debug test/debug.c)
 target_link_libraries(${TARGET_PREFIX}debug PRIVATE ${TARGET_PREFIX}grammar)
+target_include_directories(${TARGET_PREFIX}debug PRIVATE grammar)
+
+
+if (BUILD_XLR_TEST)
+    add_compile_definitions("XLR_BUILD_TEST=1")
+    aux_source_directory(test/test TEST_UTILS_SRC)
+    aux_source_directory(test/tokenize TOKENIZE_TEST_SRC)
+    add_executable(${TARGET_PREFIX}test-tokenize ${TEST_UTILS_SRC} ${TOKENIZE_TEST_SRC})
+    target_link_libraries(${TARGET_PREFIX}test-tokenize PRIVATE ${TARGET_PREFIX}grammar)
+    target_include_directories(${TARGET_PREFIX}test-tokenize PRIVATE grammar test)
+endif ()

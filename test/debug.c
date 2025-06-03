@@ -25,18 +25,10 @@
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#include "xLR/xlr.h"
+#include "tokenize/tokenize.h"
 
 
 int main() {
-  const char_t *string = "GrammarEntry = RegisterGroup* | Instruction | Memory | Immediate | RecordSet | List;";
-  LRContext *context = LRContext_new(&STDAllocator);
-  ErrInfo errInfo = {};
-  INDEX(LRRule) i_rule = LRContext_add_rule(context, &errInfo, string);
-  if (!i_rule) { return (int) errInfo.code; }
-  INDEX(LRSymbol) i_sym = LRContext_add_target(context, &errInfo, "GrammarEntry");
-  if (!i_sym) { return (int) errInfo.code; }
-  uint32_t result = LRContext_enable_rule(context, i_rule);
-  if (result != XLR_SUCCESS) { return (int) result; }
+
   return 0;
 }

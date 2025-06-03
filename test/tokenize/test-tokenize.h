@@ -1,8 +1,7 @@
-/**
- * License
+/* License
  *
- * xLR - Dynamic LR(1) Grammar Parser
- * Copyright (C) 2024 Yaokai Liu
+ * ${PROJ_DESCRIPTION}
+ * Copyright (C) 2025 Yaokai Liu
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -17,24 +16,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
+ *
  * Project Name: xLR
- * Module Name: grammar
- * Filename: string_t.h
+ * Module Name: test/tokenize
+ * Filename: test-tokenize.h
  * Creator: Yaokai Liu
- * Create Date: 2024-12-05
- * Copyright (c) 2024 Yaokai Liu. All rights reserved.
+ * Create Date: 2025-06-03
+ * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef MACHINE_STRING_T_H
-#define MACHINE_STRING_T_H
+#ifndef XLR_TEST_TOKENIZE_TEST_TOKENIZE_H
+#define XLR_TEST_TOKENIZE_TEST_TOKENIZE_H
 
-#include "array.h"
-#include "xLR/char_t.h"
 #include <stdint.h>
 
-uint32_t stridx_o(char_t chr, const char_t *str);
-#ifdef XLR_BUILD_TEST
-uint32_t strcmp_o(const char_t *str1, const char_t *str2);
-#endif
+uint32_t test_action_tokenize();
+uint32_t test_pattern_tokenize();
 
-#endif  // MACHINE_STRING_T_H
+#endif //XLR_TEST_TOKENIZE_TEST_TOKENIZE_H

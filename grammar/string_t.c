@@ -34,3 +34,10 @@ inline uint32_t stridx_o(const char_t chr, const char_t * const str) {
   while (chr != str[len] && str[len]) { len++; }
   return len;
 }
+#ifdef XLR_BUILD_TEST
+inline uint32_t strcmp_o(const char_t *const str1, const char_t * const str2) {
+  uint32_t i = 0;
+  while (str1[i] && str2[i] && (str1[i] == str2[i])) { i++; }
+  return i;
+}
+#endif
