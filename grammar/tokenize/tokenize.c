@@ -238,7 +238,7 @@ fn_try_keyword(else, ELSE)
 fn_try_keyword(enum, ENUM)
 fn_try_keyword(token, TOKEN)
 fn_try_keyword(while, WHILE)
-fn_try_keyword_val(sizeof, BUILTIN_FUNCTION, XLR_BF_SIZEOF)
+fn_try_keyword_val(sizeof, BUILTIN_FUNCTION, XLR_FUN_SIZEOF)
 
 #define fn_fall_through(len)                                      \
   do {                                                            \
@@ -422,7 +422,7 @@ uint32_t tokenize_symbol_NOT(const char_t *input, Terminal *result, const Alloca
     result->value = (void *) (uint64_t) XLR_COMP_NE;
     result->length = 2;
   } else {
-    result->type = XLR_TOKEN_COND_BIN_OP;
+    result->type = XLR_TOKEN_COND_SIN_OP;
     result->value = (void *) (uint64_t) XLR_CS_NOT;
     result->length = 1;
   }
@@ -432,7 +432,7 @@ uint32_t tokenize_symbol_PLUS(const char_t *input, Terminal *result, const Alloc
   const char_t *pText = input;
   if (*pText == '+') {
     result->type = XLR_TOKEN_INTEGRATED_OP;
-    result->value = (void *) (uint64_t) XLR_IAL_INC;
+    result->value = (void *) (uint64_t) XLR_IA_INC;
     result->length = 2;
   } else {
     result->type = XLR_TOKEN_ARITH_0_OP;
@@ -445,7 +445,7 @@ uint32_t tokenize_symbol_MINUS(const char_t *input, Terminal *result, const Allo
   const char_t *pText = input;
   if (*pText == '-') {
     result->type = XLR_TOKEN_INTEGRATED_OP;
-    result->value = (void *) (uint64_t) XLR_IAL_DEC;
+    result->value = (void *) (uint64_t) XLR_IA_DEC;
     result->length = 2;
   } else {
     result->type = XLR_TOKEN_ARITH_0_OP;
