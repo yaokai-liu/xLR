@@ -163,7 +163,7 @@ void releaseToken(Token *token, const Allocator *allocator) {
     releaseTokenCase(EnumDeclaration, EnumDeclaration)
     releaseTokenCase(ForCondition, ForCondition)
     case XLR_TOKEN_CondExpr:
-    case XLR_TOKEN_SingleCondExpr:
+    case XLR_TOKEN_CompExpr:
     case XLR_TOKEN_ArithExpr:
     case XLR_TOKEN_Arith_0_Expr:
     case XLR_TOKEN_Arith_1_Expr:

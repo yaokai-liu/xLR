@@ -37,22 +37,38 @@
 
 typedef uint32_t tokenize_t(const char_t *, Terminal *, const Allocator *);
 
+#define add_test(test_name, tokenize)                 \
+  do {                                                \
+    uint32_t failed = test_name(tokenize, #tokenize); \
+    n_failed += failed;                               \
+    n_success += (failed == 0);                       \
+  } while (false)
+
 #define NEW_TEST(test_name) uint32_t test_name(tokenize_t *tokenize, const char_t *__tokeinze_name)
+
 #define TEST_START(_input)                                    \
-  uint32_t n_failed = 0;;                                     \
+  uint32_t n_failed = 0;                                      \
   const char_t *const input = _input;                         \
   const uint32_t input_len = strlen(input);                   \
   Terminal result = {};                                       \
   uint32_t length = tokenize(input, &result, &STDAllocator);  \
 
-#define TEST_END \
+#ifdef XLR_TEST_SHOW_EVERY_TEST_RESULT
+#define TEST_END                                              \
   if (result.type == XLR_TOKEN_IDENTIFIER && result.value) {  \
-  STDAllocator.free(result.value);                            \
+    STDAllocator.free(result.value);                          \
   }                                                           \
   if (!n_failed) {                                            \
     fprintf(stdout, "test for '%s' passed.\n", __FUNCTION__); \
   }                                                           \
   return n_failed;
+#else
+#define TEST_END                                              \
+  if (result.type == XLR_TOKEN_IDENTIFIER && result.value) {  \
+    STDAllocator.free(result.value);                          \
+  }                                                           \
+  return n_failed;
+#endif
 
 #define test_assert(expr)                               \
   do {                                                  \
@@ -257,10 +273,17 @@ NEW_OPERATOR_TEST(ARITH_2_BIN_OP, XLR_AB_LSH, "<<", LSH)
 NEW_OPERATOR_TEST(INTEGRATED_OP, XLR_IA_INC, "++", INC)
 NEW_OPERATOR_TEST(INTEGRATED_OP, XLR_IA_DEC, "--", DEC)
 
-NEW_SYMBOL_TEST(BUILTIN_FUNCTION, "sizeof", XLR_FUN_SIZEOF, SIZEOF)
+NEW_SYMBOL_TEST(BUILTIN_FUNCTION, "sizeof", (void *) (uint64_t) XLR_FUN_SIZEOF, SIZEOF)
+
+NEW_SYMBOL_TEST(QUANTIFIER, "*", (void *) (uint64_t) XLR_QUANT_ANY_COUNT, ANY_COUNT)
+NEW_SYMBOL_TEST(QUANTIFIER, "+", (void *) (uint64_t) XLR_QUANT_MORE_THAN_ONE, MORE_THAN_ONE)
+NEW_SYMBOL_TEST(QUANTIFIER, "?", (void *) (uint64_t) XLR_QUANT_LESS_THAN_ONE, LESS_THAN_ONE)
+
+NEW_SYMBOL_TEST(TERMINATOR, "", nullptr, 0)
 
 uint32_t test_action_tokenize() {
   uint32_t n_failed = 0;
+  uint32_t n_success = 0;
 
   add_test(IDENTIFIER_lower_letters, action_single_tokenize);
   add_test(IDENTIFIER_upper_letters, action_single_tokenize);
@@ -354,17 +377,33 @@ uint32_t test_action_tokenize() {
   add_test(OPERATOR_INTEGRATED_OP_DEC, action_single_tokenize);
 
   add_test(SYMBOL_BUILTIN_FUNCTION_SIZEOF, action_single_tokenize);
+  add_test(SYMBOL_TERMINATOR_0, action_single_tokenize);
 
+  printf("%u tests passed in '%s'.\n", n_success, __FUNCTION__);
   return n_failed;
 }
 
 uint32_t test_pattern_tokenize() {
   uint32_t n_failed = 0;
+  uint32_t n_success = 0;
   add_test(IDENTIFIER_lower_letters, pattern_single_tokenize);
   add_test(IDENTIFIER_upper_letters, pattern_single_tokenize);
   add_test(IDENTIFIER_tailed_numbers_0, pattern_single_tokenize);
   add_test(IDENTIFIER_tailed_numbers_1, pattern_single_tokenize);
   add_test(IDENTIFIER_startswith_dash_0, pattern_single_tokenize);
   add_test(IDENTIFIER_startswith_dash_1, pattern_single_tokenize);
+  add_test(SYMBOL_LEFT_BRACKET_0, pattern_single_tokenize);
+  add_test(SYMBOL_RIGHT_BRACKET_0, pattern_single_tokenize);
+  add_test(SYMBOL_LEFT_PARENTHESIS_0, pattern_single_tokenize);
+  add_test(SYMBOL_RIGHT_PARENTHESIS_0, pattern_single_tokenize);
+  add_test(SYMBOL_LEFT_SQUARE_BRACKET_0, pattern_single_tokenize);
+  add_test(SYMBOL_RIGHT_SQUARE_BRACKET_0, pattern_single_tokenize);
+  add_test(SYMBOL_QUANTIFIER_ANY_COUNT, pattern_single_tokenize);
+  add_test(SYMBOL_QUANTIFIER_MORE_THAN_ONE, pattern_single_tokenize);
+  add_test(SYMBOL_QUANTIFIER_LESS_THAN_ONE, pattern_single_tokenize);
+
+  add_test(SYMBOL_TERMINATOR_0, pattern_single_tokenize);
+
+  printf("%u tests passed in '%s'.\n", n_success, __FUNCTION__);
   return n_failed;
 }

@@ -476,7 +476,7 @@ uint32_t tokenize_arith_single_symbols(const char_t * const input, Terminal * co
   }
   return 0;
 }
-constexpr uint32_t TERMINAL_TYPE_LITERALS[] = {
+constexpr uint32_t ACTION_TERMINAL_TYPE_LITERALS[] = {
   XLR_TOKEN_AT,
   XLR_TOKEN_DOT,
   XLR_TOKEN_COLON,
@@ -491,11 +491,30 @@ constexpr uint32_t TERMINAL_TYPE_LITERALS[] = {
   XLR_TOKEN_LEFT_PARENTHESIS,
   XLR_TOKEN_RIGHT_PARENTHESIS,
 };
-uint32_t tokenize_grammar_single_symbols(const char_t * const input, Terminal * const result, const Allocator * const) {
-  constexpr char_t SINGLE_LITERAL[] = "@.:,;?{}[]()";
-  uint32_t length = stridx_o(*input, SINGLE_LITERAL);
-  if (length < lenof(SINGLE_LITERAL)) {
-    result->type = TERMINAL_TYPE_LITERALS[length];
+uint32_t tokenize_action_single_symbol(const char_t * const input, Terminal * const result, const Allocator * const) {
+  constexpr char_t ACTION_SINGLE_LITERAL[] = "@.:,;?{}[]()";
+  uint32_t length = stridx_o(*input, ACTION_SINGLE_LITERAL);
+  if (length < lenof(ACTION_SINGLE_LITERAL)) {
+    result->type = ACTION_TERMINAL_TYPE_LITERALS[length];
+    result->value = nullptr;
+    result->length = 1;
+    return 1;
+  }
+  return 0;
+}
+constexpr uint32_t PATTERN_TERMINAL_TYPE_LITERALS[] = {
+  XLR_TOKEN_LEFT_BRACKET,
+  XLR_TOKEN_RIGHT_BRACKET,
+  XLR_TOKEN_LEFT_SQUARE_BRACKET,
+  XLR_TOKEN_RIGHT_SQUARE_BRACKET,
+  XLR_TOKEN_LEFT_PARENTHESIS,
+  XLR_TOKEN_RIGHT_PARENTHESIS,
+};
+uint32_t tokenize_pattern_single_symbol(const char_t * const input, Terminal * const result, const Allocator * const) {
+  constexpr char_t PATTERN_SINGLE_LITERAL[] = "{}[]()";
+  uint32_t length = stridx_o(*input, PATTERN_SINGLE_LITERAL);
+  if (length < lenof(PATTERN_SINGLE_LITERAL)) {
+    result->type = PATTERN_TERMINAL_TYPE_LITERALS[length];
     result->value = nullptr;
     result->length = 1;
     return 1;
@@ -534,7 +553,7 @@ uint32_t action_single_tokenize(const char_t * const input, Terminal * const res
     length = tokenize_number(input, result, allocator);
     return length;
   }
-  length = tokenize_grammar_single_symbols(input, result, allocator);
+  length = tokenize_action_single_symbol(input, result, allocator);
   if (length > 0) { return length; }
   length = tokenize_arith_single_symbols(input, result, allocator);
   if (length > 0) { return length; }
@@ -575,7 +594,9 @@ uint32_t pattern_single_tokenize(const char_t * const input, Terminal * const re
     }
     default: {}
   }
-  uint32_t length = t_IDENTIFIER(input, result, allocator);
+  uint32_t length = tokenize_pattern_single_symbol(input, result, allocator);
+  if (length > 0) { return length; }
+  length = t_IDENTIFIER(input, result, allocator);
   if (length > 0) { return length; }
   result->type = XLR_TOKEN_BAD_TOKEN;
   result->value = nullptr;

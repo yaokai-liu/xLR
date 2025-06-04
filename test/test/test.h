@@ -30,9 +30,4 @@
 
 #include <stdio.h>
 
-
-#define add_test(test_name, tokenize) \
-  do { n_failed += test_name(tokenize, #tokenize); } while (false)
-
-
 #endif //XLR_TEST_TEST_H

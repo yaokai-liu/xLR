@@ -54,7 +54,13 @@ typedef LRType EnumDeclaration, TokenDefinition;
 
 typedef LRRule RuleDefinition;
 
-typedef struct Expression Expr, CondExpr, SingleCondExpr;
+struct Expression {
+  uint32_t type;
+  void *lhs;
+  void *rhs;
+};
+
+typedef struct Expression Expr, CondExpr, CompExpr;
 typedef struct Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;
 typedef struct Expression AssignExpr, Assignable, Accessed, Subscribed, Subscriber;
 typedef struct Expression Evaluable, IntegratedExpr, FunctionCall;
@@ -83,12 +89,6 @@ struct ActionStatement {
 };
 
 typedef CondExpr IfCondition, ForCondition;
-
-struct Expression {
-  uint32_t type;
-  void *lhs;
-  void *rhs;
-};
 
 ActionBlock *ActionBlock_new(const Allocator *allocator);
 

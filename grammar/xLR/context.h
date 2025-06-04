@@ -151,7 +151,7 @@ typedef struct LRContext {
   Array *type_array;    // Array<LRType>
   Array *enum_array;    // Array<Array<EnumItem>>
   Array *block_array;   // Array<ActionBlock>
-  ActionBlock *curr_block;
+  REFER(ActionBlock) curr_block;
   INDEX(LRState) state;
   bool     in_pattern;
   uint32_t error;
@@ -207,4 +207,5 @@ INDEX(LRType) LRContext_typeof(LRContext *context, ErrInfo *errInfo, Expr *expr)
 bool LRContext_subtype(LRContext *context, ErrInfo *errInfo, Expr *expr, LRType);
 LRValue *LRContext_eval(LRContext *context, ErrInfo *errInfo, Expr *expr);
 
+LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident);
 #endif  // XLR_LR_CONTEXT_H

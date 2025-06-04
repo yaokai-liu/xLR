@@ -51,11 +51,10 @@
 
 Accessed * XLR_Accessed_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
   ArithExpr *lhs = args[0].value;
-  uint32_t optype = (uint64_t) args[1].value;
   ArithExpr *rhs = args[2].value;
 
-  SingleCondExpr *expr = allocator->calloc(1, sizeof(Expr));
-  expr->type = optype;
+  CompExpr *expr = allocator->calloc(1, sizeof(Expr));
+  expr->type = XLR_TOKEN_Accessed;
   expr->lhs = lhs;
   expr->rhs = rhs;
 
@@ -193,7 +192,19 @@ Arith_4_Expr * XLR_Arith_4_Expr_1 (Token [], LRContext *, ErrInfo *, const Alloc
   return nullptr;
 }
 
-AssignExpr * XLR_AssignExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
+AssignExpr * XLR_AssignExpr_0 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *) {
+  Assignable *assignable = args[0].value;
+  ArithExpr *expr = args[2].value;
+  switch (assignable->type) {
+    case XLR_TOKEN_IDENTIFIER: {
+      LRVariable *var = assignable->rhs;
+      var->value = LRContext_eval(context, errInfo, expr);
+      return assignable;
+    }
+    case XLR_TOKEN_Accessed: {}
+    case XLR_TOKEN_Subscribed: {}
+  }
+
   return nullptr;
 }
 
@@ -205,8 +216,18 @@ AssignExpr * XLR_AssignExpr_2 (Token [], LRContext *, ErrInfo *, const Allocator
   return nullptr;
 }
 
-Assignable * XLR_Assignable_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+Assignable * XLR_Assignable_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *allocator) {
+  REFER(Identifier) v_ident = args[0].value;
+
+  LRVariable *var = LRContext_get_variable(context, v_ident);
+  if (!var) { return nullptr; }
+
+  Assignable *assignable = allocator->calloc(1, sizeof(Assignable));
+  assignable->type = XLR_TOKEN_IDENTIFIER;
+  assignable->lhs = nullptr;
+  assignable->rhs = var;
+
+  return assignable;
 }
 
 Assignable * XLR_Assignable_1 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
@@ -215,6 +236,35 @@ Assignable * XLR_Assignable_1 (Token args[], LRContext *, ErrInfo *, const Alloc
 
 Assignable * XLR_Assignable_2 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
   return args[0].value;
+}
+
+CompExpr * XLR_CompExpr_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  uint32_t optype = (uint64_t) args[0].value;
+  CompExpr *rhs = args[1].value;
+
+  Expr *expr = allocator->calloc(1, sizeof(Expr));
+  expr->type = optype;
+  expr->lhs = nullptr;
+  expr->rhs = rhs;
+
+  return expr;
+}
+
+CompExpr * XLR_CompExpr_1 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  ArithExpr *lhs = args[0].value;
+  uint32_t optype = (uint64_t) args[1].value;
+  ArithExpr *rhs = args[2].value;
+
+  CompExpr *expr = allocator->calloc(1, sizeof(Expr));
+  expr->type = optype;
+  expr->lhs = lhs;
+  expr->rhs = rhs;
+
+  return expr;
+}
+
+CompExpr * XLR_CompExpr_2 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  return args[1].value;
 }
 
 CondExpr * XLR_CondExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
@@ -596,35 +646,6 @@ RuleDefinition * XLR_RuleDefinition_1 (Token args[], LRContext *context, ErrInfo
   AVLTree_set(context->rule_tree, (uint64_t) v_rule_name, v_rule);
 
   return v_rule;
-}
-
-SingleCondExpr * XLR_SingleCondExpr_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
-  uint32_t optype = (uint64_t) args[0].value;
-  SingleCondExpr *rhs = args[1].value;
-
-  Expr *expr = allocator->calloc(1, sizeof(Expr));
-  expr->type = optype;
-  expr->lhs = nullptr;
-  expr->rhs = rhs;
-
-  return expr;
-}
-
-SingleCondExpr * XLR_SingleCondExpr_1 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
-  ArithExpr *lhs = args[0].value;
-  uint32_t optype = (uint64_t) args[1].value;
-  ArithExpr *rhs = args[2].value;
-
-  SingleCondExpr *expr = allocator->calloc(1, sizeof(Expr));
-  expr->type = optype;
-  expr->lhs = lhs;
-  expr->rhs = rhs;
-
-  return expr;
-}
-
-SingleCondExpr * XLR_SingleCondExpr_2 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
-  return args[1].value;
 }
 
 Subscribed * XLR_Subscribed_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {

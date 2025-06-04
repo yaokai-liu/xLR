@@ -447,11 +447,24 @@ LRValue * LRContext_eval(LRContext *, ErrInfo *, Expr *) {
   return nullptr;
 }
 
-//#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
-#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
+LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident) {
+  REFER(LRVariable) v_var = nullptr;
+  const ActionBlock *curr_block = context->curr_block;
+  while (curr_block) {
+    curr_block = Array_virt2real(context->block_array, curr_block);
+    v_var = AVLTree_get(curr_block->var_tree, (uint64_t) v_ident);
+    if (v_var) { break; } else { curr_block = curr_block->parent; }
+  }
+  if (!curr_block) { return nullptr; }
+  return Array_virt2real(curr_block->var_array, v_var);
+}
+
+#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
+//#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
 //#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_IF_IfCondition_##a)
-#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_FOR_ForCondition_##a)
+//#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_FOR_ForCondition_##a)
 //#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_WHILE_IfCondition_##a)
+#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_CondStatement_ELSE_##a)
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {
   switch (state) {
