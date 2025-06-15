@@ -25,10 +25,9 @@
  * Copyright (c) 2024 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef MACHINE_STRING_T_H
-#define MACHINE_STRING_T_H
+#ifndef XLR_STRING_T_H
+#define XLR_STRING_T_H
 
-#include "array.h"
 #include "xLR/char_t.h"
 #include <stdint.h>
 
@@ -37,4 +36,4 @@ uint32_t stridx_o(char_t chr, const char_t *str);
 uint32_t strcmp_o(const char_t *str1, const char_t *str2);
 #endif
 
-#endif  // MACHINE_STRING_T_H
+#endif  // XLR_STRING_T_H

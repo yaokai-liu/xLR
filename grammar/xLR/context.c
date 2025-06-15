@@ -325,7 +325,6 @@ LRContext *LRContext_new(const Allocator *allocator) {
   context->rule_array = Array_new(sizeof(LRRule), XLR_TYPE_RULE, allocator);
   context->ident_trie = Trie_new(sizeof(char_t), char2u64, allocator);
   context->type_array = Array_new(sizeof(LRType), XLR_TYPE_TYPE, allocator);
-  context->enum_array = Array_new(sizeof_array, XLR_TYPE_ENUM, allocator);
   context->block_array = Array_new(sizeof(ActionBlock), XLR_TYPE_ENUM, allocator);
   context->rule_tree = AVLTree_new(allocator, nullptr);
   context->type_tree = AVLTree_new(allocator, nullptr);
@@ -459,12 +458,12 @@ LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident
   return Array_virt2real(curr_block->var_array, v_var);
 }
 
-#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
-//#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
+//#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
+#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
 //#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_IF_IfCondition_##a)
-//#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_FOR_ForCondition_##a)
+#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_FOR_ForCondition_##a)
 //#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_WHILE_IfCondition_##a)
-#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_CondStatement_ELSE_##a)
+//#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_CondStatement_ELSE_##a)
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {
   switch (state) {

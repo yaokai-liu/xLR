@@ -29,8 +29,10 @@
 #define XLR_GRAMMAR_XLR_TYPES_H
 
 #include "xLR/char_t.h"
+#include "xLR/extint.h"
 #include "xLR/xlr.h"
 #include "array.h"
+#include "xLR/extfloat.h"
 
 enum XLR_TYPE_ENUM {
   XLR_TYPE_BAD_TYPE = 0,
@@ -56,14 +58,26 @@ typedef struct LRType {
   // if type
   // is XLR_STRUCT_BUILTIN:     nullptr
   // is XLR_STRUCT_TOKEN:       Array<LRVariable>
-  // is XLR_STRUCT_ENUM:        REFER(Enum)
+  // is XLR_STRUCT_ENUM:        Array<EnumItem>
   void         *refer;
 } LRType;
 
 typedef struct LRValue {
   INDEX(LRType) type;
   uint32_t      size;
-  void *        bytes;
+  union {
+    int32_t       I32;
+    uint32_t      U32;
+    int64_t       I64;
+    uint64_t      U64;
+    int128_t      I128;
+    uint128_t     U128;
+    float32_t     F32;
+    float64_t     F64;
+    float128_t    F128;
+    char_t*       STRING;
+    bool          BOOLEAN;
+  } val;
 } LRValue;
 
 typedef struct LRVariable {
@@ -74,6 +88,12 @@ typedef struct LRVariable {
   LRValue *     count;
   LRValue *     value;
 } LRVariable;
+
+typedef struct LROperate {
+  uint32_t    opcode;
+  LRVariable *result;
+  LRVariable *operand[2];
+} LROperate;
 
 typedef struct LRSymbol LRSymbol;
 typedef struct LRState LRState;

@@ -72,8 +72,8 @@ typedef Array VarList, Declaration, Declarations; // Array<LRVariable>
 typedef struct ActionBlock ActionBlock;
 struct ActionBlock {
   REFER(ActionBlock) parent;
-  AVLTree *var_tree;  // AVLTree<REFER(Identifier), REFER(LRVariable)>
-  Array   *var_array; // Array<LRVariable>
+  AVLTree *var_tree;  // AVLTree<REFER(Identifier), REFER(Array<LRVariable>)>
+  Array   *var_array; // Array<Array<LRVariable>>
   Array   *subblocks;  // Array<INDEX(ActionBlock)>
   Array   *commands;
 };

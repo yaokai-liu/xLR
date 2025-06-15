@@ -25,8 +25,74 @@
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
+#include "allocator.h"
+#include "array.h"
+#include "xLR/target.h"
 #include "xLR/tokens.h"
+#include "xLR/token.h"
 
 const char_t *get_name(uint16_t type) {
   return TOKEN_NAMES[type];
+}
+
+
+#define releaseArrayCase(array, ele)                        \
+  case XLR_TOKEN_##array: {                                 \
+    Array_reset(token->value, (destruct_t *) release##ele); \
+    Array_destroy(token->value);                            \
+    break;                                                  \
+  }
+#define releaseTokenCase(t, r)           \
+  case XLR_TOKEN_##t: {                  \
+    release##r(token->value, allocator); \
+    break;                               \
+  }
+
+void releaseToken(Token *token, const Allocator *allocator) {
+  switch (token->type) {
+    // token array
+    releaseArrayCase(Declarations, Declaration)
+    releaseArrayCase(ActionStatements, ActionStatement)
+    releaseArrayCase(GrammarItems, GrammarItem)
+    releaseArrayCase(Arguments, Expr)
+    releaseArrayCase(EnumItems, EnumItem)
+    // token
+    releaseTokenCase(ActionBlock, ActionBlock)
+    releaseTokenCase(RuleDefinition, RuleDefinition)
+    releaseTokenCase(Declaration, Declaration)
+    releaseTokenCase(TokenDefinition, TokenDefinition)
+    releaseTokenCase(ActionStatement, ActionStatement)
+    releaseTokenCase(GrammarEntry, GrammarEntry)
+    releaseTokenCase(IfCondition, IfCondition)
+    releaseTokenCase(ForStatement, ForStatement)
+    releaseTokenCase(GrammarItem, GrammarItem)
+    releaseTokenCase(IfStatement, IfStatement)
+    releaseTokenCase(WhileStatement, WhileStatement)
+    releaseTokenCase(EnumItem, EnumItem)
+    releaseTokenCase(CondStatement, CondStatement)
+    releaseTokenCase(GrammarPattern, GrammarPattern)
+    releaseTokenCase(EnumDeclaration, EnumDeclaration)
+    releaseTokenCase(ForCondition, ForCondition)
+    case XLR_TOKEN_CondExpr:
+    case XLR_TOKEN_CompExpr:
+    case XLR_TOKEN_ArithExpr:
+    case XLR_TOKEN_Arith_0_Expr:
+    case XLR_TOKEN_Arith_1_Expr:
+    case XLR_TOKEN_Arith_2_Expr:
+    case XLR_TOKEN_Arith_3_Expr:
+    case XLR_TOKEN_Arith_4_Expr:
+    case XLR_TOKEN_AssignExpr:
+    case XLR_TOKEN_Assignable:
+    case XLR_TOKEN_Accessed:
+    case XLR_TOKEN_Subscribed:
+    case XLR_TOKEN_Evaluable:
+    case XLR_TOKEN_IntegratedExpr:
+    case XLR_TOKEN_FunctionCall:
+    case XLR_TOKEN_OptionalAssignExpr:
+    case XLR_TOKEN_OptionalCondExpr: {
+      releaseExpr(token->value, allocator);
+      break;
+    }
+    default: {}
+  }
 }

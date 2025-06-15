@@ -19,18 +19,19 @@
  *
  * Project Name: xLR
  * Module Name:
- * Filename: char_t.h
+ * Filename: extfloat.h
  * Creator: Yaokai Liu
- * Create Date: 24-7-4
- * Copyright (c) 2024 Yaokai Liu. All rights reserved.
+ * Create Date: 2025-06-15
+ * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef CHAR_T_H
-#define CHAR_T_H
+#ifndef XLR_EXT_FLOAT_H
+#define XLR_EXT_FLOAT_H
 
-// Promise sizeof(char_t) < sizeof(uint64_t).
-typedef char char_t;
+#include "extint.h"
+typedef float         float32_t;
+typedef double        float64_t;
+typedef long double   float128_t;
+typedef float128_t    float256_t;
 
-#define string_t(_str) _str
-
-#endif  // CHAR_T_H
+#endif //XLR_EXT_FLOAT_H

@@ -50,6 +50,7 @@ include_directories(include)
 
 file(GLOB_RECURSE XLR_GRAMMAR_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} grammar/*.c grammar/*.h)
 add_library(${TARGET_PREFIX}grammar STATIC ${XLR_GRAMMAR_SRC})
+target_link_libraries(${TARGET_PREFIX}grammar PRIVATE m)
 target_include_directories(${TARGET_PREFIX}grammar PRIVATE grammar)
 
 

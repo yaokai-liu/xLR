@@ -149,7 +149,6 @@ typedef struct LRContext {
   Array *state_array;   // Array<LRState>
   AVLTree *type_tree;   // AVLTree<REFER(char_t), REFER(LRType)>
   Array *type_array;    // Array<LRType>
-  Array *enum_array;    // Array<Array<EnumItem>>
   Array *block_array;   // Array<ActionBlock>
   REFER(ActionBlock) curr_block;
   INDEX(LRState) state;

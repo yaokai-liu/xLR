@@ -18,19 +18,19 @@
  *
  *
  * Project Name: xLR
- * Module Name:
- * Filename: char_t.h
+ * Module Name: include/xLR
+ * Filename: extint.h
  * Creator: Yaokai Liu
- * Create Date: 24-7-4
- * Copyright (c) 2024 Yaokai Liu. All rights reserved.
+ * Create Date: 2025-06-15
+ * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef CHAR_T_H
-#define CHAR_T_H
+#ifndef XLR_EXT_INT_H
+#define XLR_EXT_INT_H
 
-// Promise sizeof(char_t) < sizeof(uint64_t).
-typedef char char_t;
+typedef signed    _BitInt(128) int128_t;
+typedef unsigned  _BitInt(128) uint128_t;
+typedef signed    _BitInt(256) int256_t;
+typedef unsigned  _BitInt(256) uint256_t;
 
-#define string_t(_str) _str
-
-#endif  // CHAR_T_H
+#endif //XLR_EXT_INT_H

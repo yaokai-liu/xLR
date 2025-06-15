@@ -61,7 +61,7 @@ uint32_t
 XLRTokenizer_next(Tokenizer *tokenizer, bool in_pattern, Token *token, ErrInfo *errInfo, const Allocator *allocator) {
   tokenizer->offset += pass_space(pText, &tokenizer->lineno, &tokenizer->column);
   Terminal terminal = {};
-  terminal.type = XLR_ERROR_BAD_TOKEN;
+  terminal.type = XLR_TOKEN_BAD_TOKEN;
   terminal.location.lineno = tokenizer->lineno;
   terminal.location.column = tokenizer->column;
   terminal.location.offset = tokenizer->offset;
