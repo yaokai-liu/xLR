@@ -90,6 +90,15 @@ struct ActionStatement {
 
 typedef CondExpr IfCondition, ForCondition;
 
+typedef REFER(char_t) LiteralTexts;
+
+typedef struct WrapperedText {
+  uint16_t n_pred;
+  uint16_t n_succ;
+  uint32_t length;
+  char_t * content;
+} WrapperedText;
+
 ActionBlock *ActionBlock_new(const Allocator *allocator);
 
 void releaseActionBlock(ActionBlock *, const Allocator *);

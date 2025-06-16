@@ -91,21 +91,22 @@
     }                                                     \
   } while (false)
 
-void LRSymbol_add_rule(LRContext *context, INDEX(LRSymbol) i_sym, INDEX(LRRule) i_rule, uint64_t enable);
-void LRSymbol_update_first_set(LRContext *context, INDEX(LRSymbol) i_sym, INDEX(LRRule) i_rule, uint64_t enable);
-void LRSymbol_set_env(const LRContext *context, INDEX(LRSymbol) i_sym, const LRItem *item, uint64_t enable);
-void LRSymbol_release(LRSymbol *symbol, const Allocator *allocator);
+static void LRSymbol_add_rule(LRContext *context, INDEX(LRSymbol) i_sym, INDEX(LRRule) i_rule, uint64_t enable);
+static void LRSymbol_update_first_set(LRContext *context, INDEX(LRSymbol) i_sym, INDEX(LRRule) i_rule, uint64_t enable);
+static void LRSymbol_set_env(const LRContext *context, INDEX(LRSymbol) i_sym, const LRItem *item, uint64_t enable);
+static void LRSymbol_release(LRSymbol *symbol, const Allocator *allocator);
+static void LRSymbol_build_first_set(LRContext *context, INDEX(LRSymbol) i_sym);
 
+static bool LRItem_isEnd(const LRContext *context, const LRItem *item);
+static void LRItem_build_closure(const LRContext *context, Array *item_array);
+static INDEX(LRSymbol) LRItem_current(const LRContext *context, const LRItem *item);
+static INDEX(LRSymbol) LRItem_ahead(const LRContext *context, const LRItem *item);
+static void LRContext_enumerate_items(LRContext *context, INDEX(LRRule) i_rule, Array *item_array);
 
-bool LRItem_isEnd(const LRContext *context, const LRItem *item);
-void LRItem_build_closure(const LRContext *context, Array *item_array);
-INDEX(LRSymbol) LRItem_current(const LRContext *context, const LRItem *item);
-INDEX(LRSymbol) LRItem_ahead(const LRContext *context, const LRItem *item);
-void LRContext_enumerate_items(LRContext *context, INDEX(LRRule) i_rule, Array *item_array);
-
-LRAction *
+static LRAction *
 LRState_set_reduce_action(LRContext *context, LRState *state, uint32_t key_info, const LRItem *item, uint64_t enable);
-LRAction *LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, INDEX(LRSymbol) i_sym,
+static LRAction *
+LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, INDEX(LRSymbol) i_sym,
                                    INDEX(LRRule) i_rule, uint64_t enable);
 
 int32_t LRAction_cmp(const LRAction *a, const LRAction *b) {
@@ -331,11 +332,32 @@ LRContext *LRContext_new(const Allocator *allocator) {
   context->sym_tree = AVLTree_new(allocator, nullptr);
   context->in_pattern = false;
 
-  Array_append(context->ident_array, "", 1);
+  LRContext_init(context);
+
+  return context;
+}
+
+void LRContext_init(LRContext *context) {
+  const Allocator *allocator = context->allocator;
+
+  // Builtin Types
+  Array_append(context->ident_array, BUILTIN_TYPE_NAMES, sizeof(BUILTIN_TYPE_NAMES));
+  for (uint32_t i = 0; i < BUILTIN_TYPE_COUNT; i ++) {
+    const char_t *ident = Array_real_addr(context->ident_array, (uint64_t) BUILTIN_TYPES[i].name);
+    Trie_set(context->ident_trie, ident, Array_real2virt(context->ident_array, ident));
+  }
+  Array_append(context->type_array, BUILTIN_TYPES, BUILTIN_TYPE_COUNT);
+  for (uint32_t i = 0; i < BUILTIN_TYPE_COUNT; i ++) {
+    REFER(char_t) v_ident = Array_virt_addr(context->ident_array, (uint64_t) BUILTIN_TYPES[i].name);
+    REFER(LRType) v_type = Array_virt_addr(context->type_array, i);
+    AVLTree_set(context->type_tree, (uint64_t) v_ident, v_type);
+  }
+
+  // Builtin Pattern Symbols
   const LRSymbol EXTEND_SYMBOL = {
-    .symtype = SYMTYPE_NON_TERMINAL, .index = SYM_INDEX_EXTEND,
-    .rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator),
-    .firsts = LRSymbol_new_firsts(), .envs = LRSymbol_new_envs()
+      .symtype = SYMTYPE_NON_TERMINAL, .index = SYM_INDEX_EXTEND,
+      .rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator),
+      .firsts = LRSymbol_new_firsts(), .envs = LRSymbol_new_envs()
   };
   LREnvPair pair = { .state = STA_INDEX_BASIC_STATE, .follow = SYM_INDEX_TERMINATOR };
   Set *rule_set = LRContext_new_ruleset();
@@ -346,14 +368,13 @@ LRContext *LRContext_new(const Allocator *allocator) {
 
   const LRState BAD_STATE = {};
   Array_append(context->state_array, &BAD_STATE, 1);
-  const LRState BASIC_STATE = { .type = STATYPE_NORMAL, .index = STA_INDEX_BASIC_STATE, .count = 1, .actions = LRState_new_actions() };
+  const LRState BASIC_STATE = { .type = STATYPE_NORMAL, .index = STA_INDEX_BASIC_STATE,
+                                .count = 1, .actions = LRState_new_actions() };
   Array_append(context->state_array, &BASIC_STATE, 1);
   context->state = STA_INDEX_BASIC_STATE;
 
   const LRRule BAD_RULE = { .items = nullptr, .target = SYM_INDEX_EMPTY, .enabled = false };
   Array_append(context->rule_array, &BAD_RULE, 1);
-
-  return context;
 }
 
 void LRContext_destroy(LRContext *context) {
@@ -458,11 +479,11 @@ LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident
   return Array_virt2real(curr_block->var_array, v_var);
 }
 
-//#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
-#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
+#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
+//#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
 //#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_IF_IfCondition_##a)
-#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_FOR_ForCondition_##a)
-//#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_WHILE_IfCondition_##a)
+//#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_FOR_ForCondition_##a)
+#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_WHILE_IfCondition_##a)
 //#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_CondStatement_ELSE_##a)
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {

@@ -456,17 +456,6 @@ Evaluable * XLR_Evaluable_4 (Token args[], LRContext *, ErrInfo *, const Allocat
   return evaluable;
 }
 
-Evaluable * XLR_Evaluable_5 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
-  LRValue *val = args[0].value;
-
-  Evaluable *evaluable = allocator->calloc(1, sizeof(Evaluable));
-  evaluable->type = XLR_TOKEN_VAL_LITERAL;
-  evaluable->lhs = nullptr;
-  evaluable->rhs = val;
-
-  return evaluable;
-}
-
 ForCondition * XLR_ForCondition_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
   return nullptr;
 }
@@ -626,6 +615,14 @@ IntegratedExpr * XLR_IntegratedExpr_1 (Token args[], LRContext *, ErrInfo *, con
   return args[0].value;
 }
 
+LiteralTexts * XLR_LiteralTexts_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
+  return nullptr;
+}
+
+LiteralTexts * XLR_LiteralTexts_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
+  return nullptr;
+}
+
 OptionalAssignExpr * XLR_OptionalAssignExpr_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
   return args[0].value;
 }
@@ -709,7 +706,6 @@ TokenDefinition * XLR_TokenDefinition_0 (Token args[], LRContext *context, ErrIn
   uint32_t size = 0;
   Array_foreach(LRVariable, attrs, {
     const LRType *type = Array_real_addr(context->type_array, __element->type);
-    // TODO: evaluate __element->count to uint32_t
     size += type->size * (uint32_t) (uint64_t) __element->count->val.U32;
   });
 

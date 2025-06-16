@@ -32,6 +32,7 @@
 #include "xLR/types.h"
 #include <stdlib.h>
 #include "xLR/extfloat.h"
+#include "xLR/target.h"
 #include <tgmath.h>
 
 #define lenof(str_literal) ((sizeof str_literal) - 1)
@@ -48,6 +49,13 @@ static uint32_t t_FRAC_DIGITALS_adic16(const char_t *input, uint32_t *effective_
 static uint32_t t_FRAC_DIGITALS_adic10(const char_t *input, uint32_t *effective_length, uint256_t *value);
 static uint32_t t_FRAC_DIGITALS_adic8 (const char_t *input, uint32_t *effective_length, uint256_t *value);
 static uint32_t t_FRAC_DIGITALS_adic2 (const char_t *input, uint32_t *effective_length, uint256_t *value);
+
+static uint32_t tokenize_number(const char_t * input, Terminal *  result, const Allocator * allocator);
+static uint32_t tokenize_single_char(const char_t *input, Terminal *result, const Allocator *allocator);
+static uint32_t tokenize_text(const char_t *input, uint32_t n_pred,
+                              const char_t *succ, uint32_t n_succ,
+                              Terminal *result, const Allocator *allocator);
+
 static uint32_t try_keyword_if(const char_t *input, uint32_t offs, Terminal *result, const Allocator *allocator);
 static uint32_t try_keyword_for(const char_t *input, uint32_t offs, Terminal *result, const Allocator *allocator);
 static uint32_t try_keyword_else(const char_t *input, uint32_t offs, Terminal *result, const Allocator *allocator);
@@ -308,13 +316,13 @@ uint32_t t_NUMBER(const char_t *const input, Terminal *const result,
   uint32_t int_eff_length = 0;
   uint32_t frac_eff_length = 0;
   bool exp_negative = false;
-  enum XLR_VALUE_TYPE_ENUM type = XLR_VAL_INT;
+  enum XLR_VAL_LITERAL_TYPE_ENUM type = XLR_VAL_LITERAL_INT;
 
   uint32_t length = DIGITAL_FUNC_TOOLS[adic][INT_DIGITAL_FUNC](pText, &int_eff_length, &integer);
   if (!length) { return 0; } else { pText += length; }
-  if ((*pText == 'u') || (*pText == 'U')) { pText++; type = XLR_VAL_UINT; }
+  if ((*pText == 'u') || (*pText == 'U')) { pText++; type = XLR_VAL_LITERAL_UINT; }
   else if (*pText == '.') {
-    type = XLR_VAL_FLOAT; size = 8; pText ++;
+    type = XLR_VAL_LITERAL_FLOAT; size = 8; pText ++;
     length = DIGITAL_FUNC_TOOLS[adic][FRAC_DIGITAL_FUNC](pText, &frac_eff_length, &integer);
     if (!length) { return 0; } else { pText += length; }
     if (*pText == 'p' || *pText == 'P' || *pText == 'e' || *pText == 'E') {
@@ -334,29 +342,38 @@ uint32_t t_NUMBER(const char_t *const input, Terminal *const result,
   if (isIdentChar(pText) || (*pText == '-') || (*pText == '.')) { return 0; }
 
   LRValue *value = allocator->calloc(1, sizeof(LRValue));
-  value->type = type;
   value->size = size;
-  if (type == XLR_VAL_FLOAT) {
+  if (type == XLR_VAL_LITERAL_FLOAT) {
     const uint32_t exponent_base = ADIC_BASE[adic];
     if (size == 4 ) {
       float32_t real = ((float32_t) (uint32_t) integer);
-      float32_t exp = (float32_t) pow((uint32_t) exponent_base, (int32_t) exponent);
+      float32_t exp = (float32_t) pow((float32_t) exponent_base, (int32_t) exponent);
       value->val.F32 = (negative) ? -real * exp : real * exp;
+      value->type = XLR_BUILTIN_TYPE_F32;
     } else if (size == 8 ) {
       float64_t real = ((float64_t) (uint64_t) integer);
-      float64_t exp = (float64_t) pow((uint64_t) exponent_base, (int64_t) exponent);
+      float64_t exp = (float64_t) pow((float64_t) exponent_base, (int64_t) exponent);
       value->val.F64 = (negative) ? -real * exp : real * exp;
+      value->type = XLR_BUILTIN_TYPE_F64;
     } else if (size == 16) {
       float128_t real = ((float128_t) (uint128_t) integer);
-      float128_t exp = (float128_t) pow((uint128_t) exponent_base, (int128_t) exponent);
+      float128_t exp = (float128_t) pow((float128_t) exponent_base, (int128_t) exponent);
       value->val.F128 = (negative) ? -real * exp : real * exp;
-    }
-  } else {
+      value->type = XLR_BUILTIN_TYPE_F128;
+    } else { return 0; }
+  } else if (type == XLR_VAL_LITERAL_UINT) {
     if (negative) { integer = -integer; }
-    if (size == 4) { value->val.U32 = integer; }
-    else if (size == 8) { value->val.U64 = integer; }
-    else if (size == 16) { value->val.U128 = integer; }
-  }
+    if (size == 4) { value->val.U32 = integer; value->type = XLR_BUILTIN_TYPE_U32; }
+    else if (size == 8) { value->val.U64 = integer; value->type = XLR_BUILTIN_TYPE_U64; }
+    else if (size == 16) { value->val.U128 = integer; value->type = XLR_BUILTIN_TYPE_U128; }
+    else { return 0; }
+  } else if (type == XLR_VAL_LITERAL_INT) {
+    if (negative) { integer = -integer; }
+    if (size == 4) { value->val.I32 = integer; value->type = XLR_BUILTIN_TYPE_I32; }
+    else if (size == 8) { value->val.I64 = integer; value->type = XLR_BUILTIN_TYPE_I64; }
+    else if (size == 16) { value->val.I128 = integer; value->type = XLR_BUILTIN_TYPE_I128; }
+    else { return 0; }
+  } else { return 0; }
   result->type = XLR_TOKEN_VAL_LITERAL;
   result->length = pText - input;
   result->value = value;
@@ -474,6 +491,64 @@ uint32_t tokenize_number(const char_t * const input, Terminal * const result, co
     }
   }
   tokenize_adic_number(0, ADIC_TYPE_10);
+}
+
+
+
+// '.|\\[0-9a-zA-Z]+|\\.'
+uint32_t tokenize_single_char(const char_t *const input, Terminal *const result, const Allocator *) {
+  constexpr char_t SINGLE_CHAR_LITERALS[] = "nrtv";
+  constexpr char_t SINGLE_CHAR_VALUE[] = "\n\r\t\v";
+  constexpr uint32_t SINGLE_CHAR_COUNT = lenof(SINGLE_CHAR_LITERALS);
+  const char_t *pText = input;
+  if (!*pText || *pText == '\'') { return 0; }
+  uint256_t the_char = 0;
+  if (*pText == '\\') {
+    pText++;
+    uint32_t length = t_INT_DIGITALS_adic16(pText, nullptr, &the_char);
+    if (!length) {
+      uint32_t index = stridx_o(*pText, SINGLE_CHAR_LITERALS);
+      the_char = (index < SINGLE_CHAR_COUNT) ? SINGLE_CHAR_VALUE[index] : *pText;
+      pText++;
+    } else { pText += length; }
+  } else {
+    the_char = *pText; pText++;
+  }
+  if (*pText != '\'') { result->length = pText - input; return 0; } else { pText++; }
+
+  result->value = (void *) (uint64_t) the_char;
+  result->type = XLR_TOKEN_SINGLE_CHAR;
+  result->length = pText - input + 1;
+  return result->length;
+}
+
+// ${pred}.*${succ}
+uint32_t tokenize_text(const char_t *const input, const uint32_t n_pred,
+                       const char_t *const succ, const uint32_t n_succ,
+                       Terminal *const result, const Allocator *const allocator) {
+  const char_t *pText = input;
+  while (*pText) {
+    if (*pText == '\\') {
+      if (!*pText++) { return 0; } else { pText++; }
+    }
+    uint32_t length = strcmp_o(pText, succ);
+    if (length == n_succ) { break; }
+    else if (!pText[length]) { return 0; }
+    pText ++;
+  }
+
+  const uint32_t length = n_pred + pText - input + n_succ;
+  result->type = XLR_TOKEN_TEXT;
+  WrapperedText *text = allocator->calloc(1, sizeof(WrapperedText));
+  text->n_pred = n_pred;
+  text->n_succ = n_succ;
+  text->length = pText - input;
+  text->content = allocator->malloc((text->length + 1) * sizeof(char_t));
+  allocator->memcpy(text->content, input, text->length);
+  text->content[text->length] = '\0';
+  result->length = length;
+  result->value = text;
+  return length;
 }
 
 uint32_t tokenize_letter_i(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
@@ -743,6 +818,8 @@ uint32_t action_single_tokenize(const char_t * const input, Terminal * const res
     case '+': return tokenize_symbol_PLUS(input + 1, result, allocator);
     case '-': return tokenize_symbol_MINUS(input + 1, result, allocator);
     case ':': return tokenize_symbol_COLON(input + 1, result, allocator);
+    case '"': return tokenize_text(input + 1, 1, "\"", 1, result, allocator);
+    case '\'': return tokenize_single_char(input + 1, result, allocator);
     default: {
     }
   }
@@ -772,6 +849,8 @@ uint32_t pattern_single_tokenize(const char_t * const input, Terminal * const re
     return 0;
   }
   switch (*input) {
+    case '\'': return tokenize_single_char(input + 1, result, allocator);
+    case '"': return tokenize_text(input + 1, 1, "\"", 1, result, allocator);
     case '*': {
       result->type = XLR_TOKEN_QUANTIFIER;
       result->value = (void *) (uint64_t) XLR_QUANT_ANY_COUNT;

@@ -77,13 +77,14 @@ typedef struct LRValue {
     float128_t    F128;
     char_t*       STRING;
     bool          BOOLEAN;
+    void *        STRUCT;
   } val;
 } LRValue;
 
 typedef struct LRVariable {
-  // type of attribute
+  // type of variable
   INDEX(LRType) type;
-  // name of attribute
+  // name of variable
   REFER(char_t) name;
   LRValue *     count;
   LRValue *     value;
@@ -99,5 +100,9 @@ typedef struct LRSymbol LRSymbol;
 typedef struct LRState LRState;
 typedef struct LRItem LRItem;
 typedef struct LRRule LRRule;
+
+#define BUILTIN_TYPE_NAMES "\0i32\0u32\0i64\0u64\0i128\0u128\0i256\0u256\0f32\0f64\0f128\0f256\0"
+#define BUILTIN_TYPE_COUNT 12
+extern const LRType BUILTIN_TYPES[];
 
 #endif //XLR_GRAMMAR_XLR_TYPES_H

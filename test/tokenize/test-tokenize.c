@@ -33,6 +33,7 @@
 #include "xLR/types.h"
 #include "enum.h"
 #include "xLR/extfloat.h"
+#include "xLR/target.h"
 #include <tgmath.h>
 #include <string.h>
 
@@ -75,9 +76,15 @@ typedef uint32_t tokenize_t(const char_t *, Terminal *, const Allocator *);
       if (result.value) { STDAllocator.free(result.value); }  \
       break;                                                  \
     }                                                         \
+    case XLR_TOKEN_TEXT: {                                    \
+      WrapperedText *__text = result.value;                   \
+      STDAllocator.free(__text->content);                     \
+      STDAllocator.free(result.value);                        \
+      break;                                                  \
+    }                                                         \
     case XLR_TOKEN_VAL_LITERAL: {                             \
       LRValue *__value = result.value;                        \
-      if (__value->type == XLR_VAL_STRING) {                  \
+      if (__value->type == XLR_VAL_LITERAL_STRING) {          \
       STDAllocator.free(__value->val.STRING);                 \
       }                                                       \
       STDAllocator.free(result.value);                        \
@@ -98,9 +105,9 @@ typedef uint32_t tokenize_t(const char_t *, Terminal *, const Allocator *);
     }                                                   \
   } while (false)
 
-#define __test_assert_by(__SYMBOL, expr1, expr2)          \
+#define __test_assert_by(__SYMBOL, expr1, expr2)        \
   do {                                                  \
-    if (!((expr1) __SYMBOL (expr2))) {                   \
+    if (!((expr1) __SYMBOL (expr2))) {                  \
       fprintf(stderr, "assert failed in %s:%u, "        \
                       "by tokenizer '%s'\n",            \
               __FILE__, __LINE__, __tokeinze_name);     \
@@ -115,7 +122,6 @@ typedef uint32_t tokenize_t(const char_t *, Terminal *, const Allocator *);
 
 #define test_assert_eq(expr1, expr2)  __test_assert_by(==, expr1, expr2)
 #define test_assert_ne(expr1, expr2)  __test_assert_by(!=, expr1, expr2)
-
 
 #define test_assert_tokenize_success() do { \
   if (length != input_len ) {               \
@@ -135,7 +141,6 @@ NEW_TEST(IDENTIFIER_lower_letters) {
   TEST_END
 }
 
-
 NEW_TEST(IDENTIFIER_upper_letters) {
   TEST_START("AOUBNPQUVBNKSDF")
   test_assert_tokenize_success();
@@ -144,7 +149,6 @@ NEW_TEST(IDENTIFIER_upper_letters) {
   test_assert(strcmp_o(result.value, input) == input_len);
   TEST_END
 }
-
 
 NEW_TEST(IDENTIFIER_tailed_numbers_0) {
   TEST_START("adfa123456")
@@ -180,51 +184,51 @@ NEW_TEST(IDENTIFIER_startswith_dash_1) {
   TEST_END
 }
 
-#define NEW_INTEGER_TEST(sig, _type, _attr, adic, _size, str, _value, suffix)   \
-NEW_TEST(sig##_##_size##_##adic##_##suffix) {                                   \
-  TEST_START(str)                                                               \
-  test_assert_tokenize_success();                                               \
-  test_assert_eq(result.length, length);                                        \
-  test_assert_eq(result.type, XLR_TOKEN_VAL_LITERAL);                           \
-  LRValue *value = result.value;                                                \
-  test_assert_eq(value->type, XLR_VAL_##sig);                                   \
-  test_assert_eq(value->size, _size);                                           \
-  _type val = _value;                                                           \
-  test_assert_eq(value->val._attr, val);                                        \
-  TEST_END                                                                      \
+#define NEW_INTEGER_TEST(_type, _attr, adic, _size, str, _value, suffix)   \
+NEW_TEST(_attr##_##_size##_##adic##_##suffix) {                            \
+  TEST_START(str)                                                          \
+  test_assert_tokenize_success();                                          \
+  test_assert_eq(result.length, length);                                   \
+  test_assert_eq(result.type, XLR_TOKEN_VAL_LITERAL);                      \
+  LRValue *value = result.value;                                           \
+  test_assert_eq(value->type, XLR_BUILTIN_TYPE_##_attr);                   \
+  test_assert_eq(value->size, _size);                                      \
+  _type val = _value;                                                      \
+  test_assert_eq(value->val._attr, val);                                   \
+  TEST_END                                                                 \
 }
-NEW_INTEGER_TEST( INT,  int32_t, I32, adic16, 4, "0x12AB5" , 0x12AB5 , 0)
-NEW_INTEGER_TEST( INT,  int32_t, I32, adic16, 4, "0X12345" , 0x12345 , 1)
-NEW_INTEGER_TEST( INT,  int32_t, I32, adic10, 4, "1234567" , 1234567 , 0)
-NEW_INTEGER_TEST( INT,  int32_t, I32, adic8 , 4, "0o12345" , 012345 , 0)
-NEW_INTEGER_TEST( INT,  int32_t, I32, adic8 , 4, "0O12345" , 012345 , 1)
-NEW_INTEGER_TEST( INT,  int32_t, I32, adic8 , 4, "012345"  , 012345 , 2)
-NEW_INTEGER_TEST( INT,  int32_t, I32, adic2 , 4, "0b01001" , 0b01001 , 0)
-NEW_INTEGER_TEST( INT,  int32_t, I32, adic2 , 4, "0B01001" , 0b01001 , 1)
-NEW_INTEGER_TEST(UINT, uint32_t, U32, adic16, 4, "0x12ab5u", 0x12ab5u, 0)
-NEW_INTEGER_TEST(UINT, uint32_t, U32, adic10, 4, "1234567u", 1234567u, 0)
-NEW_INTEGER_TEST(UINT, uint32_t, U32, adic8 , 4, "0o12345u", 012345u, 0)
-NEW_INTEGER_TEST(UINT, uint32_t, U32, adic2 , 4, "0B01001u", 0b01001u, 0)
-NEW_INTEGER_TEST(UINT, uint32_t, U32, adic16, 4, "0x12345U", 0x12345u, 1)
-NEW_INTEGER_TEST(UINT, uint32_t, U32, adic10, 4, "1234567U", 1234567u, 1)
-NEW_INTEGER_TEST(UINT, uint32_t, U32, adic8 , 4, "0o12345U", 012345u, 1)
-NEW_INTEGER_TEST(UINT, uint32_t, U32, adic2 , 4, "0B01001U", 0b01001u, 1)
-NEW_INTEGER_TEST( INT,  int64_t, I64, adic16, 8, "0x12AB5l" , 0x12AB5l, 0)
-NEW_INTEGER_TEST( INT,  int64_t, I64, adic16, 8, "0X12345l" , 0x12345l, 1)
-NEW_INTEGER_TEST( INT,  int64_t, I64, adic10, 8, "1234567l" , 1234567l, 0)
-NEW_INTEGER_TEST( INT,  int64_t, I64, adic8 , 8, "0o12345l" , 012345l, 0)
-NEW_INTEGER_TEST( INT,  int64_t, I64, adic8 , 8, "0O12345l" , 012345l, 1)
-NEW_INTEGER_TEST( INT,  int64_t, I64, adic8 , 8, "012345L"  , 012345l, 2)
-NEW_INTEGER_TEST( INT,  int64_t, I64, adic2 , 8, "0b01001L" , 0b01001l, 0)
-NEW_INTEGER_TEST( INT,  int64_t, I64, adic2 , 8, "0B01001L" , 0b01001l, 1)
-NEW_INTEGER_TEST(UINT, uint64_t, U64, adic16, 8, "0x12ab5ul", 0x12ab5ul, 0)
-NEW_INTEGER_TEST(UINT, uint64_t, U64, adic10, 8, "1234567ul", 1234567ul, 0)
-NEW_INTEGER_TEST(UINT, uint64_t, U64, adic8 , 8, "0o12345ul", 012345ul, 0)
-NEW_INTEGER_TEST(UINT, uint64_t, U64, adic2 , 8, "0B01001uL", 0b01001uL, 0)
-NEW_INTEGER_TEST(UINT, uint64_t, U64, adic16, 8, "0x12345Ul", 0x12345ul, 1)
-NEW_INTEGER_TEST(UINT, uint64_t, U64, adic10, 8, "1234567Ul", 1234567ul, 1)
-NEW_INTEGER_TEST(UINT, uint64_t, U64, adic8 , 8, "0o12345Ul", 012345ul, 1)
-NEW_INTEGER_TEST(UINT, uint64_t, U64, adic2 , 8, "0B01001Ul", 0b01001ul, 1)
+NEW_INTEGER_TEST( int32_t, I32, adic16, 4, "0x12AB5" , 0x12AB5 , 0)
+NEW_INTEGER_TEST( int32_t, I32, adic16, 4, "0X12345" , 0x12345 , 1)
+NEW_INTEGER_TEST( int32_t, I32, adic10, 4, "1234567" , 1234567 , 0)
+NEW_INTEGER_TEST( int32_t, I32, adic8 , 4, "0o12345" , 012345 , 0)
+NEW_INTEGER_TEST( int32_t, I32, adic8 , 4, "0O12345" , 012345 , 1)
+NEW_INTEGER_TEST( int32_t, I32, adic8 , 4, "012345"  , 012345 , 2)
+NEW_INTEGER_TEST( int32_t, I32, adic2 , 4, "0b01001" , 0b01001 , 0)
+NEW_INTEGER_TEST( int32_t, I32, adic2 , 4, "0B01001" , 0b01001 , 1)
+NEW_INTEGER_TEST(uint32_t, U32, adic16, 4, "0x12ab5u", 0x12ab5u, 0)
+NEW_INTEGER_TEST(uint32_t, U32, adic10, 4, "1234567u", 1234567u, 0)
+NEW_INTEGER_TEST(uint32_t, U32, adic8 , 4, "0o12345u", 012345u, 0)
+NEW_INTEGER_TEST(uint32_t, U32, adic2 , 4, "0B01001u", 0b01001u, 0)
+NEW_INTEGER_TEST(uint32_t, U32, adic16, 4, "0x12345U", 0x12345u, 1)
+NEW_INTEGER_TEST(uint32_t, U32, adic10, 4, "1234567U", 1234567u, 1)
+NEW_INTEGER_TEST(uint32_t, U32, adic8 , 4, "0o12345U", 012345u, 1)
+NEW_INTEGER_TEST(uint32_t, U32, adic2 , 4, "0B01001U", 0b01001u, 1)
+NEW_INTEGER_TEST( int64_t, I64, adic16, 8, "0x12AB5l" , 0x12AB5l, 0)
+NEW_INTEGER_TEST( int64_t, I64, adic16, 8, "0X12345l" , 0x12345l, 1)
+NEW_INTEGER_TEST( int64_t, I64, adic10, 8, "1234567l" , 1234567l, 0)
+NEW_INTEGER_TEST( int64_t, I64, adic8 , 8, "0o12345l" , 012345l, 0)
+NEW_INTEGER_TEST( int64_t, I64, adic8 , 8, "0O1234'5l" , 012345l, 1)
+NEW_INTEGER_TEST( int64_t, I64, adic8 , 8, "012345L"  , 012345l, 2)
+NEW_INTEGER_TEST( int64_t, I64, adic2 , 8, "0b01001L" , 0b01001l, 0)
+NEW_INTEGER_TEST( int64_t, I64, adic2 , 8, "0B01001L" , 0b01001l, 1)
+NEW_INTEGER_TEST(uint64_t, U64, adic16, 8, "0x12ab5ul", 0x12ab5ul, 0)
+NEW_INTEGER_TEST(uint64_t, U64, adic10, 8, "1234567ul", 1234567ul, 0)
+NEW_INTEGER_TEST(uint64_t, U64, adic8 , 8, "0o12345ul", 012345ul, 0)
+NEW_INTEGER_TEST(uint64_t, U64, adic2 , 8, "0B01001uL", 0b01001uL, 0)
+NEW_INTEGER_TEST(uint64_t, U64, adic16, 8, "0x123'45Ul", 0x12345ul, 1)
+NEW_INTEGER_TEST(uint64_t, U64, adic10, 8, "1234567Ul", 1234567ul, 1)
+NEW_INTEGER_TEST(uint64_t, U64, adic8 , 8, "0o12345Ul", 012345ul, 1)
+NEW_INTEGER_TEST(uint64_t, U64, adic2 , 8, "0B01001Ul", 0b01001ul, 1)
 
 #define NEW_FLOAT_TEST(_type, _attr, _size, str, _value, suffix)  \
 NEW_TEST(FLOAT_##_size##_##suffix) {                              \
@@ -233,7 +237,7 @@ NEW_TEST(FLOAT_##_size##_##suffix) {                              \
   test_assert_eq(result.length, length);                          \
   test_assert_eq(result.type, XLR_TOKEN_VAL_LITERAL);             \
   LRValue *value = result.value;                                  \
-  test_assert_eq(value->type, XLR_VAL_FLOAT);                     \
+  test_assert_eq(value->type, XLR_BUILTIN_TYPE_##_attr);          \
   test_assert_eq(value->size, _size);                             \
   _type val = _value;                                             \
   test_assert_eq(value->val._attr, val);                          \
@@ -245,12 +249,12 @@ NEW_FLOAT_TEST(float64_t , F64 , 8 , "912.1281934876", 912.1281934876, 0)
 NEW_FLOAT_TEST(float128_t, F128, 16, "912.128193981734LL", 912.128193981734L, 0)
 NEW_FLOAT_TEST(float32_t , F32 , 4 , "3.402823E+38F", 3.402823 * pow(10, 38), 1)
 NEW_FLOAT_TEST(float64_t , F64 , 8 , "0xc12.128d3be19p56", 0xc12.128d3be19p0 * pow(16, 56), 1)
-NEW_FLOAT_TEST(float128_t, F128, 16, "0xc12.1281939817p78l", 0xc12.1281939817p0l * pow(16, 78), 1)
+NEW_FLOAT_TEST(float128_t, F128, 16, "0xc12.12819'39817p78l", 0xc12.1281939817p0l * pow(16, 78), 1)
 NEW_FLOAT_TEST(float32_t , F32 , 4 , "912.128e-21f", 912.128e-21f, 2)
 NEW_FLOAT_TEST(float64_t , F64 , 8 , "0Xc12.128d3be19p-48", 0xc12.128d3be19p0 * pow(16, -48), 2)
 NEW_FLOAT_TEST(float128_t, F128, 16, "0xc12.1281939817p-87l", 0xc12.1281939817p0 * pow(16, -87), 2)
-NEW_FLOAT_TEST(float64_t , F64 , 8 , "0b10011010101.100100100010010100010e-18", 1237.5708780288696 * pow(2, -18), 3)
-NEW_FLOAT_TEST(float64_t , F64 , 8 , "061164134.13765136123465e-4", 12904540.187169919 * pow(8, -4), 4)
+NEW_FLOAT_TEST(float64_t , F64 , 8 , "0b1001'1010101.100'10010001'0010100010e-18", 1237.5708780288696 * pow(2, -18), 3)
+NEW_FLOAT_TEST(float64_t , F64 , 8 , "061164134.137651e-4", 12904540.187168121 * pow(8, -4), 4)
 
 #define NEW_SYMBOL_TEST(name, str, val, suffix) \
 NEW_TEST(SYMBOL_##name##_##suffix) {            \
@@ -287,7 +291,7 @@ NEW_SYMBOL_TEST(RIGHT_SQUARE_BRACKET, "]", nullptr, 0)
 
 
 #define NEW_OPERATOR_TEST(_type, val, str, suffix)      \
-NEW_TEST(OPERATOR_##_type##_##suffix) {        \
+NEW_TEST(OPERATOR_##_type##_##suffix) {                 \
   TEST_START(str)                                       \
   test_assert_tokenize_success();                       \
   test_assert(result.length == length);                 \
@@ -327,6 +331,63 @@ NEW_SYMBOL_TEST(QUANTIFIER, "?", (void *) (uint64_t) XLR_QUANT_LESS_THAN_ONE, LE
 
 NEW_SYMBOL_TEST(TERMINATOR, "", nullptr, 0)
 
+NEW_TEST(TEXT_0) {
+  #define TEXT_CONTENT "01p9euhnf9*%^09upbn^ 08%o\\b\al54(%*(UNR0V9 \n \t aoij%^-0@#"
+  #define TEXT "\""TEXT_CONTENT"\""
+  TEST_START(TEXT)
+  test_assert_tokenize_success();
+  test_assert(result.length == length);
+  test_assert(result.type == XLR_TOKEN_TEXT);
+  WrapperedText *text = result.value;
+  test_assert_eq(text->n_pred, 1);
+  test_assert_eq(text->n_succ, 1);
+  test_assert_eq(text->length, length - 2);
+  test_assert_eq(strcmp_o(text->content, TEXT_CONTENT), text->length);
+  #undef _TEXT
+  TEST_END
+}
+
+NEW_TEST(SINGLE_CHAR_0) {
+  TEST_START("'a'")
+  test_assert_tokenize_success();
+  test_assert(result.length == length);
+  test_assert(result.type == XLR_TOKEN_SINGLE_CHAR);
+  test_assert_eq((uint64_t) result.value, 'a');
+  #undef _TEXT
+  TEST_END
+}
+
+NEW_TEST(SINGLE_CHAR_1) {
+  TEST_START("'\\a'")
+  test_assert_tokenize_success();
+  test_assert(result.length == length);
+  test_assert(result.type == XLR_TOKEN_SINGLE_CHAR);
+  test_assert_eq((uint64_t) result.value, 10);
+  #undef _TEXT
+  TEST_END
+}
+
+NEW_TEST(SINGLE_CHAR_2) {
+  TEST_START("'\\n'")
+  test_assert_tokenize_success();
+  test_assert(result.length == length);
+  test_assert(result.type == XLR_TOKEN_SINGLE_CHAR);
+  test_assert_eq((uint64_t) result.value, '\n');
+  #undef _TEXT
+  TEST_END
+}
+
+NEW_TEST(SINGLE_CHAR_3) {
+  TEST_START("'\\ac311548dfa'")
+  test_assert_tokenize_success();
+  test_assert(result.length == length);
+  test_assert(result.type == XLR_TOKEN_SINGLE_CHAR);
+  test_assert_eq((uint64_t) result.value, 0xac311548dfa);
+  #undef _TEXT
+  TEST_END
+}
+
+
 uint32_t test_action_tokenize() {
   uint32_t n_failed = 0;
   uint32_t n_success = 0;
@@ -338,38 +399,38 @@ uint32_t test_action_tokenize() {
   add_test(IDENTIFIER_startswith_dash_0, action_single_tokenize);
   add_test(IDENTIFIER_startswith_dash_1, action_single_tokenize);
 
-  add_test( INT_4_adic16_0, action_single_tokenize);
-  add_test( INT_4_adic16_1, action_single_tokenize);
-  add_test( INT_4_adic10_0, action_single_tokenize);
-  add_test( INT_4_adic8_0 , action_single_tokenize);
-  add_test( INT_4_adic8_1 , action_single_tokenize);
-  add_test( INT_4_adic8_2 , action_single_tokenize);
-  add_test( INT_4_adic2_0 , action_single_tokenize);
-  add_test( INT_4_adic2_1 , action_single_tokenize);
-  add_test(UINT_4_adic16_0, action_single_tokenize);
-  add_test(UINT_4_adic16_1, action_single_tokenize);
-  add_test(UINT_4_adic10_0, action_single_tokenize);
-  add_test(UINT_4_adic10_1, action_single_tokenize);
-  add_test(UINT_4_adic8_0 , action_single_tokenize);
-  add_test(UINT_4_adic8_1 , action_single_tokenize);
-  add_test(UINT_4_adic2_0 , action_single_tokenize);
-  add_test(UINT_4_adic2_1 , action_single_tokenize);
-  add_test( INT_8_adic16_0, action_single_tokenize);
-  add_test( INT_8_adic16_1, action_single_tokenize);
-  add_test( INT_8_adic10_0, action_single_tokenize);
-  add_test( INT_8_adic8_0 , action_single_tokenize);
-  add_test( INT_8_adic8_1 , action_single_tokenize);
-  add_test( INT_8_adic8_2 , action_single_tokenize);
-  add_test( INT_8_adic2_0 , action_single_tokenize);
-  add_test( INT_8_adic2_1 , action_single_tokenize);
-  add_test(UINT_8_adic16_0, action_single_tokenize);
-  add_test(UINT_8_adic16_1, action_single_tokenize);
-  add_test(UINT_8_adic10_0, action_single_tokenize);
-  add_test(UINT_8_adic10_1, action_single_tokenize);
-  add_test(UINT_8_adic8_0 , action_single_tokenize);
-  add_test(UINT_8_adic8_1 , action_single_tokenize);
-  add_test(UINT_8_adic2_0 , action_single_tokenize);
-  add_test(UINT_8_adic2_1 , action_single_tokenize);
+  add_test(I32_4_adic16_0, action_single_tokenize);
+  add_test(I32_4_adic16_1, action_single_tokenize);
+  add_test(I32_4_adic10_0, action_single_tokenize);
+  add_test(I32_4_adic8_0 , action_single_tokenize);
+  add_test(I32_4_adic8_1 , action_single_tokenize);
+  add_test(I32_4_adic8_2 , action_single_tokenize);
+  add_test(I32_4_adic2_0 , action_single_tokenize);
+  add_test(I32_4_adic2_1 , action_single_tokenize);
+  add_test(U32_4_adic16_0, action_single_tokenize);
+  add_test(U32_4_adic16_1, action_single_tokenize);
+  add_test(U32_4_adic10_0, action_single_tokenize);
+  add_test(U32_4_adic10_1, action_single_tokenize);
+  add_test(U32_4_adic8_0 , action_single_tokenize);
+  add_test(U32_4_adic8_1 , action_single_tokenize);
+  add_test(U32_4_adic2_0 , action_single_tokenize);
+  add_test(U32_4_adic2_1 , action_single_tokenize);
+  add_test(I64_8_adic16_0, action_single_tokenize);
+  add_test(I64_8_adic16_1, action_single_tokenize);
+  add_test(I64_8_adic10_0, action_single_tokenize);
+  add_test(I64_8_adic8_0 , action_single_tokenize);
+  add_test(I64_8_adic8_1 , action_single_tokenize);
+  add_test(I64_8_adic8_2 , action_single_tokenize);
+  add_test(I64_8_adic2_0 , action_single_tokenize);
+  add_test(I64_8_adic2_1 , action_single_tokenize);
+  add_test(U64_8_adic16_0, action_single_tokenize);
+  add_test(U64_8_adic16_1, action_single_tokenize);
+  add_test(U64_8_adic10_0, action_single_tokenize);
+  add_test(U64_8_adic10_1, action_single_tokenize);
+  add_test(U64_8_adic8_0 , action_single_tokenize);
+  add_test(U64_8_adic8_1 , action_single_tokenize);
+  add_test(U64_8_adic2_0 , action_single_tokenize);
+  add_test(U64_8_adic2_1 , action_single_tokenize);
 
 //  add_test(FLOAT_4_0, action_single_tokenize);
   add_test(FLOAT_4_1, action_single_tokenize);
@@ -378,7 +439,7 @@ uint32_t test_action_tokenize() {
   add_test(FLOAT_8_1, action_single_tokenize);
   add_test(FLOAT_8_2, action_single_tokenize);
   add_test(FLOAT_8_3, action_single_tokenize);
-//  add_test(FLOAT_8_4, action_single_tokenize);
+  add_test(FLOAT_8_4, action_single_tokenize);
 //  add_test(FLOAT_16_0, action_single_tokenize);
   add_test(FLOAT_16_1, action_single_tokenize);
   add_test(FLOAT_16_2, action_single_tokenize);
@@ -420,7 +481,7 @@ uint32_t test_action_tokenize() {
   add_test(OPERATOR_ARITH_1_BIN_OP_MOD, action_single_tokenize);
   add_test(OPERATOR_ARITH_2_BIN_OP_XOR, action_single_tokenize);
   add_test(OPERATOR_ARITH_2_SIN_OP_INV, action_single_tokenize);
-  add_test(OPERATOR_ARITH_2_BIN_OP_OR, action_single_tokenize );
+  add_test(OPERATOR_ARITH_2_BIN_OP_OR , action_single_tokenize);
   add_test(OPERATOR_ARITH_2_BIN_OP_AND, action_single_tokenize);
   add_test(OPERATOR_ARITH_2_BIN_OP_RSH, action_single_tokenize);
   add_test(OPERATOR_ARITH_2_BIN_OP_LSH, action_single_tokenize);
@@ -429,6 +490,12 @@ uint32_t test_action_tokenize() {
 
   add_test(SYMBOL_BUILTIN_FUNCTION_SIZEOF, action_single_tokenize);
   add_test(SYMBOL_TERMINATOR_0, action_single_tokenize);
+
+  add_test(TEXT_0, action_single_tokenize);
+  add_test(SINGLE_CHAR_0, action_single_tokenize);
+  add_test(SINGLE_CHAR_1, action_single_tokenize);
+  add_test(SINGLE_CHAR_2, action_single_tokenize);
+  add_test(SINGLE_CHAR_3, action_single_tokenize);
 
   printf("%u tests passed in '%s'.\n", n_success, __FUNCTION__);
   return n_failed;
@@ -454,6 +521,12 @@ uint32_t test_pattern_tokenize() {
   add_test(SYMBOL_QUANTIFIER_LESS_THAN_ONE, pattern_single_tokenize);
 
   add_test(SYMBOL_TERMINATOR_0, pattern_single_tokenize);
+
+  add_test(TEXT_0, pattern_single_tokenize);
+  add_test(SINGLE_CHAR_0, pattern_single_tokenize);
+  add_test(SINGLE_CHAR_1, pattern_single_tokenize);
+  add_test(SINGLE_CHAR_2, pattern_single_tokenize);
+  add_test(SINGLE_CHAR_3, pattern_single_tokenize);
 
   printf("%u tests passed in '%s'.\n", n_success, __FUNCTION__);
   return n_failed;

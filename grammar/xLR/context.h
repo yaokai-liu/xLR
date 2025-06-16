@@ -146,10 +146,11 @@ typedef struct LRContext {
   AVLTree *sym_tree;    // AVLTree<REFER(char_t), REFER(LRSymbol)>
   Array *rule_array;    // Array<LRRule>
   AVLTree *rule_tree;   // AVLTree<REFER(char_t), REFER(LRRule)>
-  Array *state_array;   // Array<LRState>
-  AVLTree *type_tree;   // AVLTree<REFER(char_t), REFER(LRType)>
   Array *type_array;    // Array<LRType>
+  AVLTree *type_tree;   // AVLTree<REFER(char_t), REFER(LRType)>
+  Array *text_array;    // Array<char_t>
   Array *block_array;   // Array<ActionBlock>
+  Array *state_array;   // Array<LRState>
   REFER(ActionBlock) curr_block;
   INDEX(LRState) state;
   bool     in_pattern;
@@ -192,6 +193,7 @@ void LRAction_release(LRAction *action, const Allocator *allocator);
 void LRRule_release(LRRule *rule, const Allocator *allocator);
 void LRRuleSet_release(Set *set, const Allocator *allocator);
 
+void LRContext_init(LRContext *context);
 void LRContext_destroy(LRContext *context);
 LRContext *LRContext_new(const Allocator *allocator);
 uint32_t LRContext_enable_rule(LRContext *context, INDEX(LRRule) i_rule);
