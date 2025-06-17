@@ -28,7 +28,7 @@
 #include "types.h"
 #include "enum.h"
 
-const LRType BUILTIN_TYPES[] = {
+const LRType BUILTIN_TYPES[BUILTIN_TYPE_COUNT] = {
     [XLR_BUILTIN_TYPE_I32 ] = {.type = XLR_STRUCT_BUILTIN, .size = 0x04, .name = ((void *)  1), .refer = nullptr},
     [XLR_BUILTIN_TYPE_U32 ] = {.type = XLR_STRUCT_BUILTIN, .size = 0x04, .name = ((void *)  5), .refer = nullptr},
     [XLR_BUILTIN_TYPE_I64 ] = {.type = XLR_STRUCT_BUILTIN, .size = 0x08, .name = ((void *)  9), .refer = nullptr},
@@ -41,4 +41,5 @@ const LRType BUILTIN_TYPES[] = {
     [XLR_BUILTIN_TYPE_F64 ] = {.type = XLR_STRUCT_BUILTIN, .size = 0x08, .name = ((void *) 41), .refer = nullptr},
     [XLR_BUILTIN_TYPE_F128] = {.type = XLR_STRUCT_BUILTIN, .size = 0x10, .name = ((void *) 45), .refer = nullptr},
     [XLR_BUILTIN_TYPE_F256] = {.type = XLR_STRUCT_BUILTIN, .size = 0x20, .name = ((void *) 50), .refer = nullptr},
+    [XLR_BUILTIN_TYPE_STR ] = {.type = XLR_STRUCT_BUILTIN, .size = 0x00, .name = ((void *) 55), .refer = nullptr},
 };

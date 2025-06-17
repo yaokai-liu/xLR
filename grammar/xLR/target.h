@@ -90,7 +90,7 @@ struct ActionStatement {
 
 typedef CondExpr IfCondition, ForCondition;
 
-typedef REFER(char_t) LiteralTexts;
+typedef LRValue LiteralTexts;
 
 typedef struct WrapperedText {
   uint16_t n_pred;

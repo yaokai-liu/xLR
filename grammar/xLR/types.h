@@ -75,7 +75,7 @@ typedef struct LRValue {
     float32_t     F32;
     float64_t     F64;
     float128_t    F128;
-    char_t*       STRING;
+    char_t *      STRING;
     bool          BOOLEAN;
     void *        STRUCT;
   } val;
@@ -101,8 +101,8 @@ typedef struct LRState LRState;
 typedef struct LRItem LRItem;
 typedef struct LRRule LRRule;
 
-#define BUILTIN_TYPE_NAMES "\0i32\0u32\0i64\0u64\0i128\0u128\0i256\0u256\0f32\0f64\0f128\0f256\0"
-#define BUILTIN_TYPE_COUNT 12
-extern const LRType BUILTIN_TYPES[];
+#define BUILTIN_TYPE_NAMES "\0i32\0u32\0i64\0u64\0i128\0u128\0i256\0u256\0f32\0f64\0f128\0f256\0string\0"
+#define BUILTIN_TYPE_COUNT 13
+extern const LRType BUILTIN_TYPES[BUILTIN_TYPE_COUNT];
 
 #endif //XLR_GRAMMAR_XLR_TYPES_H

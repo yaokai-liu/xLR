@@ -320,16 +320,19 @@ const LRSymbol DEFAULT_SYMBOLS[] = {
 LRContext *LRContext_new(const Allocator *allocator) {
   LRContext *context = allocator->calloc(1, sizeof(LRContext));
   context->allocator = allocator;
-  context->state_array = Array_new(sizeof(LRState), XLR_TYPE_STATE, allocator);
-  context->sym_array = Array_new(sizeof(LRSymbol), XLR_TYPE_SYMBOL, allocator);
-  context->ident_array = Array_new(sizeof(uint8_t), XLR_TYPE_CHAR, allocator);
-  context->rule_array = Array_new(sizeof(LRRule), XLR_TYPE_RULE, allocator);
+  context->ident_array = Array_new(sizeof(uint8_t), OBJECT_IDENT, allocator);
   context->ident_trie = Trie_new(sizeof(char_t), char2u64, allocator);
-  context->type_array = Array_new(sizeof(LRType), XLR_TYPE_TYPE, allocator);
-  context->block_array = Array_new(sizeof(ActionBlock), XLR_TYPE_ENUM, allocator);
-  context->rule_tree = AVLTree_new(allocator, nullptr);
-  context->type_tree = AVLTree_new(allocator, nullptr);
+  context->plain_array = Array_new(sizeof(uint64_t), OBJECT_PLAIN, allocator);
+  context->plain_tree = AVLTree_new(allocator, nullptr);
+  context->sym_array = Array_new(sizeof(LRSymbol), OBJECT_SYMBOL, allocator);
   context->sym_tree = AVLTree_new(allocator, nullptr);
+  context->rule_array = Array_new(sizeof(LRRule), OBJECT_RULE, allocator);
+  context->rule_tree = AVLTree_new(allocator, nullptr);
+  context->type_array = Array_new(sizeof(LRType), OBJECT_TYPE, allocator);
+  context->type_tree = AVLTree_new(allocator, nullptr);
+  context->text_array = Array_new(sizeof(char_t), OBJECT_TEXT, allocator);
+  context->block_array = Array_new(sizeof(ActionBlock), OBJECT_BLOCK, allocator);
+  context->state_array = Array_new(sizeof(LRState), OBJECT_STATE, allocator);
   context->in_pattern = false;
 
   LRContext_init(context);
@@ -366,6 +369,7 @@ void LRContext_init(LRContext *context) {
   Array_append(context->sym_array, DEFAULT_SYMBOLS, 2);
   Array_append(context->sym_array, &EXTEND_SYMBOL, 1);
 
+  // Builtin States
   const LRState BAD_STATE = {};
   Array_append(context->state_array, &BAD_STATE, 1);
   const LRState BASIC_STATE = { .type = STATYPE_NORMAL, .index = STA_INDEX_BASIC_STATE,
@@ -373,6 +377,7 @@ void LRContext_init(LRContext *context) {
   Array_append(context->state_array, &BASIC_STATE, 1);
   context->state = STA_INDEX_BASIC_STATE;
 
+  // Builtin Rules
   const LRRule BAD_RULE = { .items = nullptr, .target = SYM_INDEX_EMPTY, .enabled = false };
   Array_append(context->rule_array, &BAD_RULE, 1);
 }
@@ -478,6 +483,31 @@ LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident
   if (!curr_block) { return nullptr; }
   return Array_virt2real(curr_block->var_array, v_var);
 }
+
+inline REFER(char_t) LRContent_new_text_content(LRContext *context, const char_t *text, uint32_t size) {
+  Array_append(context->text_array, "\0", 1);
+  REFER(char_t) v_content = Array_last_virt(context->text_array) + 1;
+  Array_append(context->text_array, text, size);
+  return v_content;
+}
+
+inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain) {
+  REFER(uint64_t) v_plain = AVLTree_get(context->plain_tree, plain);
+  if (!v_plain) {
+    Array_append(context->plain_array, &plain, 1);
+    v_plain = Array_last_virt(context->plain_array);
+    AVLTree_set(context->sym_tree, (uint64_t) plain, v_plain);
+  }
+  REFER(LRSymbol) v_sym = AVLTree_get(context->sym_tree, (uint64_t) v_plain);
+  if (!v_sym) {
+    LRSymbol sym = LRSymbol_new();
+    Array_append(context->sym_array, &sym, 1);
+    v_sym = Array_last_virt(context->sym_array);
+    AVLTree_set(context->sym_tree, (uint64_t) v_plain, v_sym);
+  }
+  return v_sym;
+}
+
 
 #define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
 //#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a

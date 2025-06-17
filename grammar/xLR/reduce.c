@@ -455,6 +455,32 @@ Evaluable * XLR_Evaluable_4 (Token args[], LRContext *, ErrInfo *, const Allocat
 
   return evaluable;
 }
+Evaluable * XLR_Evaluable_5 (Token args[], LRContext *, ErrInfo *, const Allocator * allocator) {
+  uint64_t the_char = (uint64_t) args[0].value;
+
+  LRValue *val = allocator->calloc(1, sizeof(LRValue));
+  val->type = XLR_BUILTIN_TYPE_U64;
+  val->size = 8;
+  val->val.U64 = the_char;
+
+  Evaluable *evaluable = allocator->calloc(1, sizeof(Evaluable));
+  evaluable->type = XLR_TOKEN_VAL_LITERAL;
+  evaluable->lhs = nullptr;
+  evaluable->rhs = val;
+
+  return evaluable;
+}
+
+Evaluable * XLR_Evaluable_6 (Token args[], LRContext *, ErrInfo *, const Allocator * allocator) {
+  LRValue *texts = args[0].value;
+
+  Evaluable *evaluable = allocator->calloc(1, sizeof(Evaluable));
+  evaluable->type = XLR_TOKEN_LiteralTexts;
+  evaluable->lhs = nullptr;
+  evaluable->rhs = texts;
+
+  return evaluable;
+}
 
 ForCondition * XLR_ForCondition_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
   return nullptr;
@@ -551,6 +577,12 @@ GrammarItem * XLR_GrammarItem_1 (Token args[], LRContext *context, ErrInfo *, co
 }
 
 GrammarItem * XLR_GrammarItem_2 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+  const uint64_t plain = (uint64_t) args[0].value;
+
+  return LRContext_plain_to_sym(context, plain);
+}
+
+GrammarItem * XLR_GrammarItem_3 (Token args[], LRContext *context, ErrInfo *, const Allocator * allocator) {
   const REFER(Identifier) ident = args[0].value;
   REFER(LRSymbol) v_sym = AVLTree_get(context->sym_tree, (uint64_t) ident);
   if (!v_sym) {
@@ -592,6 +624,20 @@ GrammarPattern * XLR_GrammarPattern_0 (Token args[], LRContext *, ErrInfo *, con
   return syms;
 }
 
+GrammarPattern * XLR_GrammarPattern_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *allocator) {
+  LiteralTexts *texts = args[0].value;
+
+  GrammarItems *items = Array_new(sizeof(INDEX(GrammarItem)), XLR_TYPE_SYMBOL, allocator);
+
+  const char_t *const plains = Array_virt2real(context->text_array, texts->val.STRING);
+  for (uint32_t i = 0; i < texts->size; i++) {
+    const uint64_t plain = plains[i];
+    const REFER(LRSymbol) v_sym = LRContext_plain_to_sym(context, plain);
+    Array_append(items, v_sym, 1);
+  }
+  return items;
+}
+
 IfCondition * XLR_IfCondition_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
   return args[0].value;
 }
@@ -615,12 +661,26 @@ IntegratedExpr * XLR_IntegratedExpr_1 (Token args[], LRContext *, ErrInfo *, con
   return args[0].value;
 }
 
-LiteralTexts * XLR_LiteralTexts_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+LiteralTexts * XLR_LiteralTexts_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+  LiteralTexts *texts = args[0].value;
+  WrapperedText *text = args[1].value;
+
+  LRContent_add_text_content(context, text->content, text->length);
+  texts->size += text->length;
+
+  return texts;
+
 }
 
-LiteralTexts * XLR_LiteralTexts_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+LiteralTexts * XLR_LiteralTexts_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *allocator) {
+  WrapperedText *text = args[0].value;
+
+  LRValue *texts = allocator->calloc(1, sizeof(LRValue));
+  texts->type = XLR_BUILTIN_TYPE_STR;
+  texts->size = text->length;
+  texts->val.STRING = LRContent_new_text_content(context, text->content, text->length);
+
+  return texts;
 }
 
 OptionalAssignExpr * XLR_OptionalAssignExpr_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {

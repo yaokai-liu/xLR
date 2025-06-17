@@ -38,6 +38,18 @@
 #include "target.h"
 #include "types.h"
 
+enum CONTEXT_OBJECT_TYPE_ENUM: uint32_t {
+  OBJECT_NULL,
+  OBJECT_IDENT,
+  OBJECT_PLAIN,
+  OBJECT_SYMBOL,
+  OBJECT_STATE,
+  OBJECT_RULE,
+  OBJECT_TYPE,
+  OBJECT_TEXT,
+  OBJECT_BLOCK,
+};
+
 typedef enum SYMBOL_TYPE_ENUM : uint8_t {
   SYMTYPE_BAD_TOKEN,
   SYMTYPE_EMPTY,
@@ -85,8 +97,8 @@ typedef struct LRAction LRAction;
 
 typedef struct LRState {
   statype  type;
-  uint32_t count;
   uint32_t index;
+  uint32_t count;
   /*
    * Dict<LRActKeyPair, LRAction>
    */
@@ -142,8 +154,10 @@ typedef struct LRContext {
   const Allocator *allocator;
   Array *ident_array;   // Array<char_t>
   Trie  *ident_trie;    // Trie<REFER(char_t)>
+  Array *plain_array;   // Array<uint64_t>
+  AVLTree *plain_tree;   // AVLTree<uint64_t, REFER(uint64_t)>
   Array *sym_array;     // Array<LRSymbol>
-  AVLTree *sym_tree;    // AVLTree<REFER(char_t), REFER(LRSymbol)>
+  AVLTree *sym_tree;    // AVLTree<REFER(union {char_t c;uint64_t p;}), REFER(LRSymbol)>
   Array *rule_array;    // Array<LRRule>
   AVLTree *rule_tree;   // AVLTree<REFER(char_t), REFER(LRRule)>
   Array *type_array;    // Array<LRType>
@@ -209,4 +223,11 @@ bool LRContext_subtype(LRContext *context, ErrInfo *errInfo, Expr *expr, LRType)
 LRValue *LRContext_eval(LRContext *context, ErrInfo *errInfo, Expr *expr);
 
 LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident);
+
+REFER(char_t) LRContent_new_text_content(LRContext *context, const char_t *text, uint32_t size);
+#define LRContent_add_text_content(context, text_content, size) \
+                         Array_append((context)->text_array, (text_content), (size))
+
+REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain);
+
 #endif  // XLR_LR_CONTEXT_H
