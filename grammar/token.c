@@ -53,7 +53,7 @@ void releaseToken(Token *token, const Allocator *allocator) {
     // token array
     releaseArrayCase(Declarations, Declaration)
     releaseArrayCase(ActionStatements, ActionStatement)
-    releaseArrayCase(GrammarItems, GrammarItem)
+    releaseArrayCase(Tokens, LRToken)
     releaseArrayCase(Arguments, Expr)
     releaseArrayCase(EnumItems, EnumItem)
     // token
@@ -65,14 +65,15 @@ void releaseToken(Token *token, const Allocator *allocator) {
     releaseTokenCase(GrammarEntry, GrammarEntry)
     releaseTokenCase(IfCondition, IfCondition)
     releaseTokenCase(ForStatement, ForStatement)
-    releaseTokenCase(GrammarItem, GrammarItem)
+    releaseTokenCase(Token, LRToken)
     releaseTokenCase(IfStatement, IfStatement)
     releaseTokenCase(WhileStatement, WhileStatement)
     releaseTokenCase(EnumItem, EnumItem)
     releaseTokenCase(CondStatement, CondStatement)
-    releaseTokenCase(GrammarPattern, GrammarPattern)
+    releaseTokenCase(Pattern, Pattern)
     releaseTokenCase(EnumDeclaration, EnumDeclaration)
     releaseTokenCase(ForCondition, ForCondition)
+    releaseTokenCase(Variable, Variable)
     case XLR_TOKEN_CondExpr:
     case XLR_TOKEN_CompExpr:
     case XLR_TOKEN_ArithExpr:

@@ -105,14 +105,14 @@ GrammarEntry *failed_to_get_next_state(
   return clean_parse_stack(state_stack, token_stack, allocator);
 }
 
-GrammarEntry  *failed_to_produce(
+GrammarEntry *failed_to_produce(
     Stack *state_stack, Stack *token_stack, Token args[], uint32_t argc, const Allocator *allocator
 ) {
   for (uint32_t i = 0; i < argc; i++) { releaseToken(&args[i], allocator); }
   return clean_parse_stack(state_stack, token_stack, allocator);
 }
 
-GrammarEntry  *clean_parse_stack(Stack *state_stack, Stack *token_stack, const Allocator *allocator) {
+GrammarEntry *clean_parse_stack(Stack *state_stack, Stack *token_stack, const Allocator *allocator) {
   Token token = {};
   while (!Stack_empty(token_stack)) {
     Stack_pop(token_stack, &token, sizeof(Token));

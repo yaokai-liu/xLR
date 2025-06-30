@@ -39,9 +39,12 @@ typedef struct GrammarEntry {
 
 typedef Array ActionStatements;
 
-typedef const void GrammarItem; // REFER(const LRSymbol)
-typedef Array GrammarItems; // Array<GrammarItem>
-typedef GrammarItems GrammarPattern;
+typedef const void LRToken; // REFER(const LRSymbol)
+typedef Array LRTokens; // Array<Token>
+typedef struct LRPattern {
+  uint16_t  cost;
+  LRTokens *tokens;
+} LRPattern;
 
 typedef Array Arguments, EnumItems;
 
@@ -109,13 +112,13 @@ void releaseActionStatement(ActionStatement *, const Allocator *);
 void releaseGrammarEntry(GrammarEntry *, const Allocator *);
 void releaseIfCondition(IfCondition *, const Allocator *);
 void releaseForStatement(ForStatement *, const Allocator *);
-void releaseGrammarItem(GrammarItem *, const Allocator *);
+void releaseLRToken(LRToken *, const Allocator *);
 void releaseIfStatement(IfStatement *, const Allocator *);
 void releaseVariable(Variable *, const Allocator *);
 void releaseWhileStatement(WhileStatement *, const Allocator *);
 void releaseEnumItem(EnumItem *, const Allocator *);
 void releaseCondStatement(CondStatement *, const Allocator *);
-void releaseGrammarPattern(GrammarPattern *, const Allocator *);
+void releasePattern(LRPattern *, const Allocator *);
 void releaseEnumDeclaration(EnumDeclaration *, const Allocator *);
 void releaseForCondition(ForCondition *, const Allocator *);
 void releaseExpr(Expr *, const Allocator *);

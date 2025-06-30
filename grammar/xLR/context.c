@@ -511,27 +511,27 @@ inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain
 
 #define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
 //#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
-//#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_IF_IfCondition_##a)
-//#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_FOR_ForCondition_##a)
-#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_WHILE_IfCondition_##a)
-//#define IN_STATEMENT(a) IN_RULE(GrammarPattern_LEFT_BRACKET_CondStatement_ELSE_##a)
+//#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_IF_IfCondition_##a)
+#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_FOR_ForCondition_##a)
+//#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_WHILE_IfCondition_##a)
+//#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_CondStatement_ELSE_##a)
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {
   switch (state) {
       case IN_RULE(LEFT_PARENTHESIS): {
       context->in_pattern = true; break;
     }
-    case IN_RULE(GrammarPattern): {
+    case IN_RULE(LEFT_PARENTHESIS_Pattern): {
       context->in_pattern = false; break;
     }
-    case IN_RULE(GrammarPattern_LEFT_BRACKET): {
+    case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET): {
       ActionBlock *block = ActionBlock_new(allocator);
       Array_append(context->block_array, block, 1);
       context->curr_block = Array_last_virt(context->block_array);
       break;
     }
     case IN_STATEMENT(LEFT_BRACKET):
-    case IN_RULE(GrammarPattern_LEFT_BRACKET_LEFT_BRACKET): {
+    case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_LEFT_BRACKET): {
       ActionBlock *block = ActionBlock_new(allocator);
       block->parent = context->curr_block;
       Array_append(context->block_array, block, 1);
@@ -539,12 +539,12 @@ void LRContext_state_action(LRContext *context, uint32_t state, Token *, const A
       break;
     }
     case IN_STATEMENT(ActionBlock):
-    case IN_RULE(GrammarPattern_LEFT_BRACKET_ActionBlock): {
+    case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_ActionBlock): {
       const ActionBlock *block = Array_virt2real(context->block_array, context->curr_block);
       context->curr_block = block->parent;
       break;
     }
-    case IN_RULE(GrammarPattern_ActionBlock): {
+    case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_ActionBlock): {
       context->curr_block = nullptr;
       break;
     }

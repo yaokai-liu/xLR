@@ -510,8 +510,8 @@ GrammarEntry * XLR_GrammarEntry_EXT (Token args[], LRContext *, ErrInfo *, const
   return args[0].value;
 }
 
-GrammarItem * XLR_GrammarItem_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
-  GrammarItems *syms = args[1].value;
+LRToken * XLR_Token_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+  LRTokens *syms = args[1].value;
   const LRSymbol target = LRSymbol_new();
   Array_append(context->sym_array, &target, 1);
   const REFER(LRSymbol) v_target = Array_last_virt(context->sym_array);
@@ -528,8 +528,8 @@ GrammarItem * XLR_GrammarItem_0 (Token args[], LRContext *context, ErrInfo *, co
   return v_target;
 }
 
-GrammarItem * XLR_GrammarItem_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
-  const REFER(GrammarItem) v_sym = args[0].value;
+LRToken * XLR_Token_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+  const REFER(Token) v_sym = args[0].value;
   const uint32_t quant = (uint64_t) args[1].value;
 
   const INDEX(LRSymbol) i_sym = refer2index(v_sym);
@@ -576,13 +576,13 @@ GrammarItem * XLR_GrammarItem_1 (Token args[], LRContext *context, ErrInfo *, co
   return v_target;
 }
 
-GrammarItem * XLR_GrammarItem_2 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+LRToken * XLR_Token_2 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
   const uint64_t plain = (uint64_t) args[0].value;
 
   return LRContext_plain_to_sym(context, plain);
 }
 
-GrammarItem * XLR_GrammarItem_3 (Token args[], LRContext *context, ErrInfo *, const Allocator * allocator) {
+LRToken * XLR_Token_3 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
   const REFER(Identifier) ident = args[0].value;
   REFER(LRSymbol) v_sym = AVLTree_get(context->sym_tree, (uint64_t) ident);
   if (!v_sym) {
@@ -594,48 +594,86 @@ GrammarItem * XLR_GrammarItem_3 (Token args[], LRContext *context, ErrInfo *, co
   return v_sym;
 }
 
-GrammarItems * XLR_GrammarItems_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
-  GrammarItems *items = args[0].value;
-  REFER(GrammarItem) item = args[1].value;
+LRTokens * XLR_Tokens_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
+  LRTokens *tokens = args[0].value;
+  REFER(Token) token = args[1].value;
 
-  INDEX(LRSymbol) i_item = refer2index(item);
-  Array_append(items, &i_item, 1);
+  INDEX(LRSymbol) i_token = refer2index(token);
+  Array_append(tokens, &i_token, 1);
 
-  return items;
+  return tokens;
 }
 
-GrammarItems * XLR_GrammarItems_1 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
-  REFER(GrammarItem) item = args[0].value;
+LRTokens * XLR_Tokens_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
+  LRTokens *tokens = args[0].value;
+  WrapperedText *text = args[1].value;
 
-  GrammarItems *items = Array_new(sizeof(INDEX(GrammarItem)), XLR_TYPE_SYMBOL, allocator);
-
-  INDEX(LRSymbol) i_item = refer2index(item);
-  Array_append(items, &i_item, 1);
-
-  return items;
-}
-
-GrammarItems * XLR_GrammarItems_2 (Token [], LRContext *, ErrInfo *, const Allocator *allocator) {
-  return Array_new(sizeof(INDEX(GrammarItem)), XLR_TYPE_SYMBOL, allocator);
-}
-
-GrammarPattern * XLR_GrammarPattern_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
-  GrammarItems *syms = args[1].value;
-  return syms;
-}
-
-GrammarPattern * XLR_GrammarPattern_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *allocator) {
-  LiteralTexts *texts = args[0].value;
-
-  GrammarItems *items = Array_new(sizeof(INDEX(GrammarItem)), XLR_TYPE_SYMBOL, allocator);
-
-  const char_t *const plains = Array_virt2real(context->text_array, texts->val.STRING);
-  for (uint32_t i = 0; i < texts->size; i++) {
-    const uint64_t plain = plains[i];
-    const REFER(LRSymbol) v_sym = LRContext_plain_to_sym(context, plain);
-    Array_append(items, v_sym, 1);
+  for (uint32_t i = 0; i < text->length; i++) {
+    uint64_t plain = text->content[i];
+    REFER(LRSymbol) v_sym = LRContext_plain_to_sym(context, plain);
+    INDEX(LRSymbol) i_token = refer2index(v_sym);
+    Array_append(tokens, &i_token, 1);
   }
-  return items;
+
+  return tokens;
+}
+
+LRTokens * XLR_Tokens_2 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  REFER(Token) token = args[0].value;
+
+  LRTokens *tokens = Array_new(sizeof(INDEX(LRToken)), XLR_TYPE_SYMBOL, allocator);
+
+  INDEX(LRSymbol) i_token = refer2index(token);
+  Array_append(tokens, &i_token, 1);
+
+  return tokens;
+}
+
+LRTokens * XLR_Tokens_3 (Token args[], LRContext *context, ErrInfo *, const Allocator * allocator) {
+  WrapperedText *text = args[0].value;
+
+  LRTokens *tokens = Array_new(sizeof(INDEX(LRToken)), XLR_TYPE_SYMBOL, allocator);
+
+  for (uint32_t i = 0; i < text->length; i++) {
+    uint64_t plain = text->content[i];
+    REFER(LRSymbol) v_sym = LRContext_plain_to_sym(context, plain);
+    INDEX(LRSymbol) i_token = refer2index(v_sym);
+    Array_append(tokens, &i_token, 1);
+  }
+
+  return tokens;
+}
+
+LRTokens * XLR_Tokens_4 (Token [], LRContext *, ErrInfo *, const Allocator * allocator) {
+  return Array_new(sizeof(INDEX(LRToken)), XLR_TYPE_SYMBOL, allocator);
+}
+
+LRPattern * XLR_Pattern_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  LRTokens *cost_tokens = args[0].value;
+  LRTokens *look_tokens = args[1].value;
+
+  const uint32_t cost = Array_length(cost_tokens);
+  Array_concat(cost_tokens, look_tokens);
+
+  LRPattern *pattern = allocator->calloc(1, sizeof(LRPattern));
+  pattern->tokens = cost_tokens;
+  pattern->cost = cost;
+
+  releasePrimeArray(look_tokens);
+
+  return pattern;
+}
+
+LRPattern * XLR_Pattern_1 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  LRTokens *cost_tokens = args[0].value;
+
+  const uint32_t cost = Array_length(cost_tokens);
+
+  LRPattern *pattern = allocator->calloc(1, sizeof(LRPattern));
+  pattern->tokens = cost_tokens;
+  pattern->cost = cost;
+
+  return pattern;
 }
 
 IfCondition * XLR_IfCondition_0 (Token args[], LRContext *, ErrInfo *, const Allocator *) {
@@ -702,7 +740,7 @@ OptionalCondExpr * XLR_OptionalCondExpr_1 (Token [], LRContext *, ErrInfo *, con
 RuleDefinition * XLR_RuleDefinition_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
   REFER(LRType) *v_type = args[0].value;
   REFER(Identifier) *v_ident = args[1].value;
-  GrammarPattern *pattern = args[2].value;
+  LRPattern *pattern = args[2].value;
   ActionBlock *action = args[3].value;
 
   REFER(LRRule) v_rule = AVLTree_get(context->rule_tree, (uint64_t) v_ident);
@@ -710,8 +748,8 @@ RuleDefinition * XLR_RuleDefinition_0 (Token args[], LRContext *context, ErrInfo
 
   const LRType *type = Array_virt2real(context->type_array, v_type);
   REFER(LRSymbol) v_sym = AVLTree_get(context->sym_tree, (uint64_t) type->name);
-  LRRule rule = { .enabled = false, .target = refer2index(v_sym),
-                  .items = pattern, .action = action };
+  LRRule rule = { .enabled = false, .cost = pattern->cost, .target = refer2index(v_sym),
+                  .items = pattern->tokens, .action = action };
   Array_append(context->rule_array, &rule, 1);
   v_rule = Array_last_virt(context->rule_array);
   AVLTree_set(context->rule_tree, (uint64_t) v_ident, v_rule);
@@ -722,7 +760,7 @@ RuleDefinition * XLR_RuleDefinition_0 (Token args[], LRContext *context, ErrInfo
 RuleDefinition * XLR_RuleDefinition_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *) {
   REFER(Identifier) *v_type_name = args[0].value;
   REFER(Identifier) *v_rule_name = args[1].value;
-  GrammarPattern *pattern = args[2].value;
+  LRPattern *pattern = args[2].value;
   ActionBlock *block = args[3].value;
 
   REFER(LRType) v_type = AVLTree_get(context->type_tree, (uint64_t) v_type_name);
@@ -731,8 +769,8 @@ RuleDefinition * XLR_RuleDefinition_1 (Token args[], LRContext *context, ErrInfo
   if (v_rule) { return nullptr; }
 
   REFER(LRSymbol) v_sym = AVLTree_get(context->sym_tree, (uint64_t) v_type_name);
-  LRRule rule = { .enabled = false, .target = refer2index(v_sym),
-      .items = pattern, .action = block };
+  LRRule rule = { .enabled = false, .cost = pattern->cost, .target = refer2index(v_sym),
+      .items = pattern->tokens, .action = block };
   Array_append(context->rule_array, &rule, 1);
   v_rule = Array_last_virt(context->rule_array);
   AVLTree_set(context->rule_tree, (uint64_t) v_rule_name, v_rule);

@@ -68,11 +68,15 @@ void releaseForStatement(ForStatement *, const Allocator *) {
 
 }
 
-void releaseGrammarItem(GrammarItem *, const Allocator *) {
+void releaseLRToken(LRToken *, const Allocator *) {
 
 }
 
 void releaseIfStatement(IfStatement *, const Allocator *) {
+
+}
+
+void releaseVariable(Variable *, const Allocator *) {
 
 }
 
@@ -88,7 +92,7 @@ void releaseCondStatement(CondStatement *, const Allocator *) {
 
 }
 
-void releaseGrammarPattern(GrammarPattern *, const Allocator *) {
+void releasePattern(LRPattern *, const Allocator *) {
 
 }
 

@@ -138,6 +138,7 @@ typedef struct LRSymbol {
 
 typedef struct LRRule {
   bool enabled;
+  uint16_t cost;
   INDEX(LRSymbol) target;
   Array *items;  // Array<INDEX(LRSymbol)>
   ActionBlock *action;

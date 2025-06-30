@@ -343,6 +343,9 @@ uint32_t t_NUMBER(const char_t *const input, Terminal *const result,
 
   LRValue *value = allocator->calloc(1, sizeof(LRValue));
   value->size = size;
+  // TODO:
+  //  The value obtained in this way is not accurate enough.
+  //  Please try to improve the algorithm.
   if (type == XLR_VAL_LITERAL_FLOAT) {
     const uint32_t exponent_base = ADIC_BASE[adic];
     if (size == 4 ) {
@@ -374,6 +377,7 @@ uint32_t t_NUMBER(const char_t *const input, Terminal *const result,
     else if (size == 16) { value->val.I128 = integer; value->type = XLR_BUILTIN_TYPE_I128; }
     else { return 0; }
   } else { return 0; }
+
   result->type = XLR_TOKEN_VAL_LITERAL;
   result->length = pText - input;
   result->value = value;
