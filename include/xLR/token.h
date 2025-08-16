@@ -54,15 +54,15 @@ typedef struct Terminal {
 } Terminal;
 
 typedef struct Token {
-  /// start of the terminal
+  /// start of the token
   Location start;
-  /// end of the terminal
+  /// end of the token
   Location end;
-  /// length of the terminal (size in bytes)
+  /// length of the token (size in bytes)
   uint32_t length;
   /// Token Type
   uint32_t type;
-  /// value of the terminal
+  /// value of the token
   void *value;
 } Token;
 

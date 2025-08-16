@@ -874,7 +874,7 @@ Variable * XLR_Variable_2 (Token args[], LRContext *context, ErrInfo *errInfo, c
   item->count = nullptr;
   item->value = LRContext_eval(context, errInfo, value_expr);
 
-  return item;
+  return (errInfo->code == XLR_SUCCESS) ? item : nullptr;
 }
 
 Variable * XLR_Variable_3 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator) {
@@ -887,9 +887,11 @@ Variable * XLR_Variable_3 (Token args[], LRContext *context, ErrInfo *errInfo, c
   item->type = -1;
   item->name = attr_name;
   item->count = LRContext_eval(context, errInfo, count_expr);
+  if (errInfo->code != XLR_SUCCESS) { return nullptr; }
   item->value = LRContext_eval(context, errInfo, value_expr);
+  if (errInfo->code != XLR_SUCCESS) { return nullptr; }
 
-  return (errInfo->code == XLR_SUCCESS) ? item : nullptr;
+  return item;
 }
 
 WhileStatement * XLR_WhileStatement_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {

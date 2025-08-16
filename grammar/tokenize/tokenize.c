@@ -30,7 +30,6 @@
 #include "xLR/token.h"
 #include "xLR/tokens.h"
 #include "xLR/types.h"
-#include <stdlib.h>
 #include "xLR/extfloat.h"
 #include "xLR/target.h"
 #include <tgmath.h>

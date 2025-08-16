@@ -358,7 +358,7 @@ void LRContext_init(LRContext *context) {
 
   // Builtin Pattern Symbols
   const LRSymbol EXTEND_SYMBOL = {
-      .symtype = SYMTYPE_NON_TERMINAL, .index = SYM_INDEX_EXTEND,
+      .symtype = SYMTYPE_NON_TERMINAL, .index = SYM_INDEX_FINIAL,
       .rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator),
       .firsts = LRSymbol_new_firsts(), .envs = LRSymbol_new_envs()
   };
@@ -509,10 +509,10 @@ inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain
 }
 
 
-#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
-//#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
-//#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_IF_IfCondition_##a)
-#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_FOR_ForCondition_##a)
+//#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
+#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
+#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_IF_IfCondition_##a)
+//#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_FOR_ForCondition_##a)
 //#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_WHILE_IfCondition_##a)
 //#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_CondStatement_ELSE_##a)
 
