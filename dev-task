@@ -1,0 +1,2 @@
+TODO: Compile `ActionBlock` to executable data instead of expression AST.
+TODO: Build `Pattern` to real state transition table instead of single rule.

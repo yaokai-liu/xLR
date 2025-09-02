@@ -31,7 +31,6 @@
 #include "tokenize/tokenizer.h"
 #include "generated/xLR/action-table.gen.h"
 #include "generated/xLR/rules.gen.h"
-#include "xLR/tokens.h"
 
 #define MAX_ARGC       16
 
