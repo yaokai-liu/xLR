@@ -63,8 +63,8 @@ typedef struct LRType {
 } LRType;
 
 typedef struct LRValue {
-  INDEX(LRType) type;
-  uint32_t      size;
+  REFER(LRType) type;
+  uint64_t      size;
   union {
     int32_t       I32;
     uint32_t      U32;
@@ -83,7 +83,7 @@ typedef struct LRValue {
 
 typedef struct LRVariable {
   // type of variable
-  INDEX(LRType) type;
+  REFER(LRType) type;
   // name of variable
   REFER(char_t) name;
   LRValue *     count;
@@ -101,8 +101,7 @@ typedef struct LRState LRState;
 typedef struct LRItem LRItem;
 typedef struct LRRule LRRule;
 
-#define BUILTIN_TYPE_NAMES "\0i32\0u32\0i64\0u64\0i128\0u128\0i256\0u256\0f32\0f64\0f128\0f256\0string\0"
-#define BUILTIN_TYPE_COUNT 13
+#define BUILTIN_TYPE_COUNT 16
 extern const LRType BUILTIN_TYPES[BUILTIN_TYPE_COUNT];
 
 #endif //XLR_GRAMMAR_XLR_TYPES_H

@@ -14,3 +14,4 @@ __pycache__
 .cache
 grammar/generated
 include/xLR/tokens.h
+output

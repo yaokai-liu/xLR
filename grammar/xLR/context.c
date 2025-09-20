@@ -29,6 +29,8 @@
 #include "xLR/char_t.h"
 #include "generated/xLR/action-table.gen.h"
 #include "target.h"
+#include <string.h>
+#include "vars.h"
 
 #define Array_foreach(type, _array, doing)              \
   do {                                                  \
@@ -344,16 +346,37 @@ void LRContext_init(LRContext *context) {
   const Allocator *allocator = context->allocator;
 
   // Builtin Types
-  Array_append(context->ident_array, BUILTIN_TYPE_NAMES, sizeof(BUILTIN_TYPE_NAMES));
   for (uint32_t i = 0; i < BUILTIN_TYPE_COUNT; i ++) {
-    const char_t *ident = Array_real_addr(context->ident_array, (uint64_t) BUILTIN_TYPES[i].name);
-    Trie_set(context->ident_trie, ident, Array_real2virt(context->ident_array, ident));
-  }
-  Array_append(context->type_array, BUILTIN_TYPES, BUILTIN_TYPE_COUNT);
-  for (uint32_t i = 0; i < BUILTIN_TYPE_COUNT; i ++) {
-    REFER(char_t) v_ident = Array_virt_addr(context->ident_array, (uint64_t) BUILTIN_TYPES[i].name);
-    REFER(LRType) v_type = Array_virt_addr(context->type_array, i);
+    const LRType *builtin_type = &BUILTIN_TYPES[i];
+    REFER(char_t) v_ident = Trie_get(context->ident_trie, builtin_type->name);
+    if (!v_ident) {
+      v_ident = Array_last_virt(context->ident_array) + 1;
+      Trie_set(context->ident_trie, builtin_type->name, v_ident);
+      Array_append(context->ident_array, builtin_type->name, strlen(builtin_type->name) + 1);
+    }
+    LRType type = {
+      .type = builtin_type->type, .size = builtin_type->size,
+      .name = v_ident, .refer = builtin_type->refer
+    };
+    Array_append(context->type_array, &type, 1);
+    REFER(LRType) v_type = Array_last_virt(context->type_array);
     AVLTree_set(context->type_tree, (uint64_t) v_ident, v_type);
+  }
+  // Builtin Variables
+  for (uint32_t i = 0; i < BUILTIN_VAR_COUNT; i ++) {
+    const LRVariable *builtin_var = &BUILTIN_VARS[i];
+    REFER(char_t) v_ident = Trie_get(context->ident_trie, builtin_var->name);
+    if (!v_ident) {
+      v_ident = Array_last_virt(context->ident_array) + 1;
+      Trie_set(context->ident_trie, builtin_var->name, v_ident);
+      Array_append(context->ident_array, builtin_var->name, strlen(builtin_var->name) + 1);
+    }
+    REFER(char_t) type_name = Trie_get(context->ident_trie, BUILTIN_TYPES[(uint64_t) builtin_var->type].name);
+    REFER(LRType) type = AVLTree_get(context->type_tree, (uint64_t) type_name);
+    LRVariable var = { .type = type, .name = v_ident, .count = builtin_var->count, .value = builtin_var->value };
+    Array_append(context->var_array, &var, 1);
+    REFER(LRVariable) v_var = Array_last_virt(context->var_array);
+    AVLTree_set(context->var_tree, (uint64_t) v_ident, v_var);
   }
 
   // Builtin Pattern Symbols
@@ -496,7 +519,7 @@ inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain
   if (!v_plain) {
     Array_append(context->plain_array, &plain, 1);
     v_plain = Array_last_virt(context->plain_array);
-    AVLTree_set(context->sym_tree, (uint64_t) plain, v_plain);
+    AVLTree_set(context->plain_tree, (uint64_t) plain, v_plain);
   }
   REFER(LRSymbol) v_sym = AVLTree_get(context->sym_tree, (uint64_t) v_plain);
   if (!v_sym) {
@@ -509,12 +532,13 @@ inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain
 }
 
 
-//#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
+// #define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
 #define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
-#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_IF_IfCondition_##a)
-//#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_FOR_ForCondition_##a)
-//#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_WHILE_IfCondition_##a)
-//#define IN_STATEMENT(a) IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_CondStatement_ELSE_##a)
+#define IN_ACTION_BLOCK(a) XLR_state_ATTR_IDENTIFIER_LEFT_BRACKET_##a
+// #define IN_STATEMENT(a) IN_ACTION_BLOCK(IF_IfCondition_##a)
+// #define IN_STATEMENT(a) IN_ACTION_BLOCK(FOR_ForCondition_##a)
+// #define IN_STATEMENT(a) IN_ACTION_BLOCK(WHILE_IfCondition_##a)
+#define IN_STATEMENT(a) IN_ACTION_BLOCK(CondStatement_ELSE_##a)
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {
   switch (state) {
@@ -524,6 +548,7 @@ void LRContext_state_action(LRContext *context, uint32_t state, Token *, const A
     case IN_RULE(LEFT_PARENTHESIS_Pattern): {
       context->in_pattern = false; break;
     }
+    case XLR_state_ATTR_IDENTIFIER_LEFT_BRACKET:
     case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET): {
       ActionBlock *block = ActionBlock_new(allocator);
       Array_append(context->block_array, block, 1);
@@ -531,7 +556,7 @@ void LRContext_state_action(LRContext *context, uint32_t state, Token *, const A
       break;
     }
     case IN_STATEMENT(LEFT_BRACKET):
-    case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_LEFT_BRACKET): {
+    case IN_ACTION_BLOCK(LEFT_BRACKET): {
       ActionBlock *block = ActionBlock_new(allocator);
       block->parent = context->curr_block;
       Array_append(context->block_array, block, 1);
@@ -539,11 +564,12 @@ void LRContext_state_action(LRContext *context, uint32_t state, Token *, const A
       break;
     }
     case IN_STATEMENT(ActionBlock):
-    case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET_ActionBlock): {
+    case IN_ACTION_BLOCK(ActionBlock): {
       const ActionBlock *block = Array_virt2real(context->block_array, context->curr_block);
       context->curr_block = block->parent;
       break;
     }
+    case XLR_state_ATTR_IDENTIFIER_ActionBlock:
     case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_ActionBlock): {
       context->curr_block = nullptr;
       break;

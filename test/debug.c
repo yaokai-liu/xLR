@@ -26,9 +26,9 @@
  **/
 
 #include "tokenize/tokenize.h"
-
+#include "xLR/context.h"
 
 int main() {
-
-  return 0;
+  LRContext *context = LRContext_new(&STDAllocator);
+  return context->error;
 }

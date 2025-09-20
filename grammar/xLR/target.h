@@ -55,22 +55,26 @@ typedef struct {
 
 typedef LRType EnumDeclaration, TokenDefinition;
 
+typedef struct AttrDefinition {
+
+} AttrDefinition;
+
 typedef LRRule RuleDefinition;
 
 struct Expression {
-  uint32_t type;
+  uint64_t type;
   void *lhs;
   void *rhs;
 };
 
 typedef struct Expression Expr, CondExpr, CompExpr;
 typedef struct Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;
-typedef struct Expression AssignExpr, Assignable, Accessed, Subscribed, Subscriber;
+typedef struct Expression AssignExpr, Assignable, Accessed, Attributed, Subscribed, Subscriber;
 typedef struct Expression Evaluable, IntegratedExpr, FunctionCall;
 typedef struct Expression OptionalAssignExpr, OptionalCondExpr;
 
 typedef LRVariable Variable;
-typedef Array VarList, Declaration, Declarations; // Array<LRVariable>
+typedef Array AttrList, VarList, Declaration, Declarations; // Array<LRVariable>
 
 typedef struct ActionBlock ActionBlock;
 struct ActionBlock {
@@ -93,7 +97,7 @@ struct ActionStatement {
 
 typedef CondExpr IfCondition, ForCondition;
 
-typedef LRValue LiteralTexts;
+typedef LRValue LiteralValue, LiteralTexts;
 
 typedef struct WrapperedText {
   uint16_t n_pred;

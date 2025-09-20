@@ -166,6 +166,8 @@ typedef struct LRContext {
   Array *text_array;    // Array<char_t>
   Array *block_array;   // Array<ActionBlock>
   Array *state_array;   // Array<LRState>
+  AVLTree *var_tree;  // AVLTree<REFER(char_t), REFER(Array<LRVariable>)>
+  Array   *var_array; // Array<Array<LRVariable>>
   REFER(ActionBlock) curr_block;
   INDEX(LRState) state;
   bool     in_pattern;
@@ -230,5 +232,10 @@ REFER(char_t) LRContent_new_text_content(LRContext *context, const char_t *text,
                          Array_append((context)->text_array, (text_content), (size))
 
 REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain);
+
+#define LRContext_get_type(name)      AVLTree_get(context->type_tree, (uint64_t) Trie_get(context->ident_trie, name))
+#define LRContext_builtin_type(index) AVLTree_get(context->type_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_TYPES[index].name))
+#define LRContext_get_var(name)       AVLTree_get(context->var_tree, (uint64_t) Trie_get(context->ident_trie, name))
+#define LRContext_builtin_var(index)  AVLTree_get(context->var_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_TYPES[index].name))
 
 #endif  // XLR_LR_CONTEXT_H

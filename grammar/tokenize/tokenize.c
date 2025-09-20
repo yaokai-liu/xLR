@@ -349,29 +349,29 @@ uint32_t t_NUMBER(const char_t *const input, Terminal *const result,
       float32_t real = ((float32_t) (uint32_t) integer);
       float32_t exp = (float32_t) pow((float32_t) exponent_base, (int32_t) exponent - 1);
       value->val.F32 = (negative) ? -real * exp : real * exp;
-      value->type = XLR_BUILTIN_TYPE_F32;
+      value->type = (REFER(LRType)) XLR_BUILTIN_TYPE_F32;
     } else if (size == 8 ) {
       float64_t real = ((float64_t) (uint64_t) integer);
       float64_t exp = (float64_t) pow((float64_t) exponent_base, (int64_t) exponent - 1);
       value->val.F64 = (negative) ? -real * exp : real * exp;
-      value->type = XLR_BUILTIN_TYPE_F64;
+      value->type = (REFER(LRType)) XLR_BUILTIN_TYPE_F64;
     } else if (size == 16) {
       float128_t real = ((float128_t) (uint128_t) integer);
       float128_t exp = (float128_t) pow((float128_t) exponent_base, (int128_t) exponent - 1);
       value->val.F128 = (negative) ? -real * exp : real * exp;
-      value->type = XLR_BUILTIN_TYPE_F128;
+      value->type = (REFER(LRType)) XLR_BUILTIN_TYPE_F128;
     } else { return 0; }
   } else if (type == XLR_VAL_LITERAL_UINT) {
     if (negative) { integer = -integer; }
-    if (size == 4) { value->val.U32 = integer; value->type = XLR_BUILTIN_TYPE_U32; }
-    else if (size == 8) { value->val.U64 = integer; value->type = XLR_BUILTIN_TYPE_U64; }
-    else if (size == 16) { value->val.U128 = integer; value->type = XLR_BUILTIN_TYPE_U128; }
+    if (size == 4) { value->val.U32 = integer; value->type = (REFER(LRType)) XLR_BUILTIN_TYPE_U32; }
+    else if (size == 8) { value->val.U64 = integer; value->type = (REFER(LRType)) XLR_BUILTIN_TYPE_U64; }
+    else if (size == 16) { value->val.U128 = integer; value->type = (REFER(LRType)) XLR_BUILTIN_TYPE_U128; }
     else { return 0; }
   } else {
     if (negative) { integer = -integer; }
-    if (size == 4) { value->val.I32 = integer; value->type = XLR_BUILTIN_TYPE_I32; }
-    else if (size == 8) { value->val.I64 = integer; value->type = XLR_BUILTIN_TYPE_I64; }
-    else if (size == 16) { value->val.I128 = integer; value->type = XLR_BUILTIN_TYPE_I128; }
+    if (size == 4) { value->val.I32 = integer; value->type = (REFER(LRType)) XLR_BUILTIN_TYPE_I32; }
+    else if (size == 8) { value->val.I64 = integer; value->type = (REFER(LRType)) XLR_BUILTIN_TYPE_I64; }
+    else if (size == 16) { value->val.I128 = integer; value->type = (REFER(LRType)) XLR_BUILTIN_TYPE_I128; }
     else { return 0; }
   }
 
