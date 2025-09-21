@@ -111,37 +111,37 @@ static LRAction *
 LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, INDEX(LRSymbol) i_sym,
                                    INDEX(LRRule) i_rule, uint64_t enable);
 
-int32_t LRAction_cmp(const LRAction *a, const LRAction *b) {
+inline int32_t LRAction_cmp(const LRAction *a, const LRAction *b) {
   return (a->acttype == b->acttype) ? (int32_t) (a->index - b->index) : (int32_t) (a->acttype - b->acttype);
 }
 
-uint64_t LREnvPair_hash(const LREnvPair *pair) {
+inline uint64_t LREnvPair_hash(const LREnvPair *pair) {
   return ((((uint64_t) pair->state) << 32) | (pair->follow));
 }
 
-uint64_t LRActKeyPair_hash(const LRActKeyPair *pair) {
+inline uint64_t LRActKeyPair_hash(const LRActKeyPair *pair) {
   return ((((uint64_t) pair->key_info) << 32) | (pair->symbol));
 }
 
-void LRState_release(LRState *state, const Allocator *) {
+inline void LRState_release(LRState *state, const Allocator *) {
   if (state->actions) { Dict_destroy(state->actions); }
 }
 
-void LRSymbol_release(LRSymbol *symbol, const Allocator *) {
+inline void LRSymbol_release(LRSymbol *symbol, const Allocator *) {
   if (symbol->rules) { releasePrimeArray(symbol->rules); }
   if (symbol->firsts) { Dict_destroy(symbol->firsts); }
   if (symbol->envs) { Dict_destroy(symbol->envs); }
 }
 
-void LRAction_release(LRAction *action, const Allocator *) {
+inline void LRAction_release(LRAction *action, const Allocator *) {
   if (action->rules) { Set_destroy(action->rules); }
 }
 
-void LRRule_release(LRRule *rule, const Allocator *) {
+inline void LRRule_release(LRRule *rule, const Allocator *) {
   if (rule->items) { releasePrimeArray(rule->items); }
 }
 
-void LRRuleSet_release(Set *set, const Allocator *) { Set_destroy(set); }
+inline void LRRuleSet_release(Set *set, const Allocator *) { Set_destroy(set); }
 
 inline void LRSymbol_build_first_set(LRContext *context, INDEX(LRSymbol) i_sym) {
   LRSymbol *symbol = Array_real_addr(context->sym_array, i_sym);
@@ -314,11 +314,6 @@ LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, 
   return action;
 }
 
-const LRSymbol DEFAULT_SYMBOLS[] = {
-    { .symtype = SYMTYPE_EMPTY, .index = SYM_INDEX_EMPTY, .rules = nullptr, .firsts = nullptr, .envs = nullptr },
-    { .symtype = SYMTYPE_TERMINATOR, .index = SYM_INDEX_TERMINATOR, .rules = nullptr, .firsts = nullptr, .envs = nullptr }
-};
-
 LRContext *LRContext_new(const Allocator *allocator) {
   LRContext *context = allocator->calloc(1, sizeof(LRContext));
   context->allocator = allocator;
@@ -332,6 +327,8 @@ LRContext *LRContext_new(const Allocator *allocator) {
   context->rule_tree = AVLTree_new(allocator, nullptr);
   context->type_array = Array_new(sizeof(LRType), OBJECT_TYPE, allocator);
   context->type_tree = AVLTree_new(allocator, nullptr);
+  context->var_array = Array_new(sizeof(LRVariable), OBJECT_VAR, allocator);
+  context->var_tree = AVLTree_new(allocator, nullptr);
   context->text_array = Array_new(sizeof(char_t), OBJECT_TEXT, allocator);
   context->block_array = Array_new(sizeof(ActionBlock), OBJECT_BLOCK, allocator);
   context->state_array = Array_new(sizeof(LRState), OBJECT_STATE, allocator);
@@ -362,6 +359,7 @@ void LRContext_init(LRContext *context) {
     REFER(LRType) v_type = Array_last_virt(context->type_array);
     AVLTree_set(context->type_tree, (uint64_t) v_ident, v_type);
   }
+
   // Builtin Variables
   for (uint32_t i = 0; i < BUILTIN_VAR_COUNT; i ++) {
     const LRVariable *builtin_var = &BUILTIN_VARS[i];
@@ -380,25 +378,30 @@ void LRContext_init(LRContext *context) {
   }
 
   // Builtin Pattern Symbols
-  const LRSymbol EXTEND_SYMBOL = {
-      .symtype = SYMTYPE_NON_TERMINAL, .index = SYM_INDEX_FINIAL,
-      .rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator),
-      .firsts = LRSymbol_new_firsts(), .envs = LRSymbol_new_envs()
+  LRSymbol BUILTIN_SYMBOLS[] = {
+    // SYM EMPTY
+    [SYM_INDEX_EMPTY] = { .symtype = SYMTYPE_EMPTY, .index = SYM_INDEX_EMPTY, .rules = nullptr, .firsts = nullptr, .envs = nullptr },
+    // SYM TERMINATOR
+    [SYM_INDEX_TERMINATOR] = { .symtype = SYMTYPE_TERMINATOR, .index = SYM_INDEX_TERMINATOR, .rules = nullptr, .firsts = nullptr, .envs = nullptr },
+    // SYM FINIAL
+    [SYM_INDEX_FINIAL] = {
+        .symtype = SYMTYPE_NON_TERMINAL, .index = SYM_INDEX_FINIAL,
+        .rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator),
+        .firsts = LRSymbol_new_firsts(), .envs = LRSymbol_new_envs()
+    }
   };
-  LREnvPair pair = { .state = STA_INDEX_BASIC_STATE, .follow = SYM_INDEX_TERMINATOR };
+  LREnvPair pair = { .state = STA_INDEX_INIT_STATE, .follow = SYM_INDEX_TERMINATOR };
   Set *rule_set = LRContext_new_ruleset();
-  Dict_set(EXTEND_SYMBOL.envs, &pair, rule_set);
-
-  Array_append(context->sym_array, DEFAULT_SYMBOLS, 2);
-  Array_append(context->sym_array, &EXTEND_SYMBOL, 1);
+  Dict_set(BUILTIN_SYMBOLS[SYM_INDEX_FINIAL].envs, &pair, rule_set);
+  Array_append(context->sym_array, BUILTIN_SYMBOLS, 3);
 
   // Builtin States
   const LRState BAD_STATE = {};
   Array_append(context->state_array, &BAD_STATE, 1);
-  const LRState BASIC_STATE = { .type = STATYPE_NORMAL, .index = STA_INDEX_BASIC_STATE,
+  const LRState INIT_STATE = { .type = STATYPE_NORMAL, .index = STA_INDEX_INIT_STATE,
                                 .count = 1, .actions = LRState_new_actions() };
-  Array_append(context->state_array, &BASIC_STATE, 1);
-  context->state = STA_INDEX_BASIC_STATE;
+  Array_append(context->state_array, &INIT_STATE, 1);
+  context->state = STA_INDEX_INIT_STATE;
 
   // Builtin Rules
   const LRRule BAD_RULE = { .items = nullptr, .target = SYM_INDEX_EMPTY, .enabled = false };
@@ -532,13 +535,13 @@ inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain
 }
 
 
-// #define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
-#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
+#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
+// #define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
 #define IN_ACTION_BLOCK(a) XLR_state_ATTR_IDENTIFIER_LEFT_BRACKET_##a
 // #define IN_STATEMENT(a) IN_ACTION_BLOCK(IF_IfCondition_##a)
 // #define IN_STATEMENT(a) IN_ACTION_BLOCK(FOR_ForCondition_##a)
-// #define IN_STATEMENT(a) IN_ACTION_BLOCK(WHILE_IfCondition_##a)
-#define IN_STATEMENT(a) IN_ACTION_BLOCK(CondStatement_ELSE_##a)
+#define IN_STATEMENT(a) IN_ACTION_BLOCK(WHILE_IfCondition_##a)
+// #define IN_STATEMENT(a) IN_ACTION_BLOCK(CondStatement_ELSE_##a)
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {
   switch (state) {

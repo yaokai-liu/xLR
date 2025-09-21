@@ -46,6 +46,7 @@ enum CONTEXT_OBJECT_TYPE_ENUM: uint32_t {
   OBJECT_STATE,
   OBJECT_RULE,
   OBJECT_TYPE,
+  OBJECT_VAR,
   OBJECT_TEXT,
   OBJECT_BLOCK,
 };
@@ -71,7 +72,7 @@ enum BUILTIN_SYMBOL_INDEX_ENUM {
 
 enum BUILTIN_STATE_INDEX_ENUM {
   STA_INDEX_BAD_STATE = 0,
-  STA_INDEX_BASIC_STATE = 1,
+  STA_INDEX_INIT_STATE = 1,
 };
 
 typedef struct LRRulePair {
@@ -171,6 +172,7 @@ typedef struct LRContext {
   REFER(ActionBlock) curr_block;
   INDEX(LRState) state;
   bool     in_pattern;
+  uint64_t kw_as_ident; // bits for keywords to tokenize as identifiers
   uint32_t error;
 } LRContext;
 

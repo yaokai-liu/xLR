@@ -57,8 +57,8 @@ void XLRTokenizer_destroy(Tokenizer *tokenizer) {
 }
 
 #define pText (tokenizer->src + tokenizer->offset)
-uint32_t
-XLRTokenizer_next(Tokenizer *tokenizer, bool in_pattern, Token *token, ErrInfo *errInfo, const Allocator *allocator) {
+uint32_t XLRTokenizer_next(Tokenizer *tokenizer, Token *token, ErrInfo *errInfo,
+                           bool in_pattern, uint64_t kw_as_ident, const Allocator *allocator) {
   tokenizer->offset += pass_space(pText, &tokenizer->lineno, &tokenizer->column);
   Terminal terminal = {};
   terminal.type = XLR_TOKEN_BAD_TOKEN;
@@ -66,8 +66,8 @@ XLRTokenizer_next(Tokenizer *tokenizer, bool in_pattern, Token *token, ErrInfo *
   terminal.location.column = tokenizer->column;
   terminal.location.offset = tokenizer->offset;
   const uint32_t length = (in_pattern)
-                        ? pattern_single_tokenize(pText, &terminal, allocator)
-                        : action_single_tokenize(pText, &terminal, allocator);
+                        ? pattern_single_tokenize(pText, &terminal, kw_as_ident, allocator)
+                        : action_single_tokenize(pText, &terminal, kw_as_ident, allocator);
   if (terminal.type == XLR_TOKEN_BAD_TOKEN) {
     errInfo->pos.lineno = tokenizer->lineno;
     errInfo->pos.column = tokenizer->column;
