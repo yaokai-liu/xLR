@@ -28,7 +28,7 @@
 #include "test-tokenize.h"
 #include "test/test.h"
 #include "tokenize/tokenize.h"
-#include "xLR/tokens.h"
+#include "generated/tokens.gen.h"
 #include "string_t.h"
 #include "xLR/types.h"
 #include "enum.h"

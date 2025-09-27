@@ -59,7 +59,8 @@ typedef struct LRType {
   // is XLR_STRUCT_BUILTIN:     nullptr
   // is XLR_STRUCT_TOKEN:       Array<LRVariable>
   // is XLR_STRUCT_ENUM:        Array<EnumItem>
-  void         *refer;
+  void *        refer;
+  Array *       attrs;
 } LRType;
 
 typedef struct LRValue {
@@ -87,7 +88,8 @@ typedef struct LRVariable {
   // name of variable
   REFER(char_t) name;
   LRValue *     count;
-  LRValue *     value;
+  LRValue *     init;
+  Array *       attrs;
 } LRVariable;
 
 typedef struct LROperate {
@@ -95,6 +97,12 @@ typedef struct LROperate {
   LRVariable *result;
   LRVariable *operand[2];
 } LROperate;
+
+typedef struct LRAttribute {
+  // name of attribute
+  REFER(char_t) name;
+  uint64_t      value;
+} LRAttribute;
 
 typedef struct LRSymbol LRSymbol;
 typedef struct LRState LRState;

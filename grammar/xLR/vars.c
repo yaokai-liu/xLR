@@ -30,6 +30,6 @@
 #include "enum.h"
 
 const LRVariable BUILTIN_VARS[BUILTIN_VAR_COUNT] = {
-    {.type = (REFER(LRType)) XLR_BUILTIN_TYPE_COMPILER, .name = "COMPILER", .count = nullptr, .value = nullptr},
-    {.type = (REFER(LRType)) XLR_BUILTIN_TYPE_TOKENS, .name = "TOKENS", .count = nullptr, .value = nullptr},
+    {.type = (REFER(LRType)) XLR_BUILTIN_TYPE_COMPILER, .name = "COMPILER", .count = nullptr, .init = nullptr},
+    {.type = (REFER(LRType)) XLR_BUILTIN_TYPE_TOKENS, .name = "TOKENS", .count = nullptr, .init = nullptr},
 };

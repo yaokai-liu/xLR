@@ -1,7 +1,7 @@
 ${license}
 
 #include "action.h"
-#include "xLR/tokens.h"
+#include "generated/tokens.gen.h"
 #include "generated/xLR/rules.gen.h"
 #include "generated/xLR/action-table.gen.h"
 

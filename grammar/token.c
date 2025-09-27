@@ -28,7 +28,7 @@
 #include "allocator.h"
 #include "array.h"
 #include "xLR/target.h"
-#include "xLR/tokens.h"
+#include "generated/tokens.gen.h"
 #include "xLR/token.h"
 
 const char_t *get_name(uint16_t type) {
@@ -89,8 +89,8 @@ void releaseToken(Token *token, const Allocator *allocator) {
     case XLR_TOKEN_Evaluable:
     case XLR_TOKEN_IntegratedExpr:
     case XLR_TOKEN_FunctionCall:
-    case XLR_TOKEN_OptionalAssignExpr:
-    case XLR_TOKEN_OptionalCondExpr: {
+    case XLR_TOKEN_OptionalLoopUpdateExpr:
+    case XLR_TOKEN_OptionalLoopCondExpr: {
       releaseExpr(token->value, allocator);
       break;
     }

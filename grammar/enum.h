@@ -28,7 +28,7 @@
 #ifndef XLR_GRAMMAR_ENUM_H
 #define XLR_GRAMMAR_ENUM_H
 
-#include "xLR/tokens.h"
+#include "generated/tokens.gen.h"
 
 enum XLR_OP_ENUM {
   XLR_AB_ADD = XLR_MAX_TOTAL_TOKEN + 1,

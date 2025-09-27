@@ -1,7 +1,7 @@
 ${license}
 
 #include "xLR/token.h"
-#include "xLR/tokens.h"
+#include "generated/tokens.gen.h"
 const char_t XLR_TERMINALS[] = {
   ${terminals}
 };

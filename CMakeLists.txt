@@ -28,7 +28,6 @@ if (ENABLE_GPROF)
 endif ()
 
 set(XLR_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/grammar/generated")
-set(XLR_TOKEN_ENUM_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/xLR/tokens.h")
 set(XLR_GEN_TOKEN_ENUM_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/grammar/generated/tokens.gen.h")
 if(NOT EXISTS ${XLR_GENERATED_DIR} OR NOT EXISTS ${XLR_TOKEN_ENUM_HEADER})
     message(STATUS "${XLR_GENERATED_DIR} doesn't exist or not complete, generate grammar action table.")
@@ -37,11 +36,6 @@ if(NOT EXISTS ${XLR_GENERATED_DIR} OR NOT EXISTS ${XLR_TOKEN_ENUM_HEADER})
 else()
     message(STATUS "${XLR_GENERATED_DIR} exists, skip to generate grammar action table.")
 endif()
-
-if (EXISTS ${XLR_GEN_TOKEN_ENUM_HEADER})
-    file(RENAME ${XLR_GEN_TOKEN_ENUM_HEADER} ${XLR_TOKEN_ENUM_HEADER})
-endif ()
-
 
 if (NOT TARGET meman)
     include_directories(meman)

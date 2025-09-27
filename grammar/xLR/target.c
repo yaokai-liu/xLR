@@ -26,7 +26,7 @@
  **/
 
 #include "target.h"
-#include "xLR/tokens.h"
+#include "generated/tokens.gen.h"
 
 ActionBlock *ActionBlock_new(const Allocator *allocator) {
   ActionBlock *block = allocator->calloc(1, sizeof(ActionBlock));

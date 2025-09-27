@@ -71,10 +71,13 @@ typedef struct Expression Expr, CondExpr, CompExpr;
 typedef struct Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;
 typedef struct Expression AssignExpr, Assignable, Accessed, Attributed, Subscribed, Subscriber;
 typedef struct Expression Evaluable, IntegratedExpr, FunctionCall;
-typedef struct Expression OptionalAssignExpr, OptionalCondExpr;
+typedef struct Expression OptionalLoopInitExpr, OptionalLoopUpdateExpr, OptionalLoopCondExpr;
+
+typedef AssignExpr ArrayInitExpr;
 
 typedef LRVariable Variable;
 typedef Array AttrList, VarList, Declaration, Declarations; // Array<LRVariable>
+typedef Array ArrayInitExprList; // Array<ArithExpr>
 
 typedef struct ActionBlock ActionBlock;
 struct ActionBlock {
@@ -85,15 +88,13 @@ struct ActionBlock {
   Array   *commands;
 };
 
-typedef struct ActionStatement ActionStatement, CondStatement;
-
-typedef struct ActionStatement IfStatement, ForStatement, WhileStatement;
-
-struct ActionStatement {
+typedef struct ActionStatement {
   uint32_t type;
   CondExpr *condition;
   void *action;
-};
+} ActionStatement;
+
+typedef ActionStatement IfStatement, ForStatement, WhileStatement, CondStatement;
 
 typedef CondExpr IfCondition, ForCondition;
 
@@ -107,6 +108,7 @@ typedef struct WrapperedText {
 } WrapperedText;
 
 ActionBlock *ActionBlock_new(const Allocator *allocator);
+#define AttrList_new(allocator) Array_new(sizeof(LRAttribute), XLR_TOKEN_ATTR, allocator)
 
 void releaseActionBlock(ActionBlock *, const Allocator *);
 void releaseRuleDefinition(RuleDefinition *, const Allocator *);

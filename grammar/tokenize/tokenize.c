@@ -28,7 +28,7 @@
 #include "enum.h"
 #include "string_t.h"
 #include "xLR/token.h"
-#include "xLR/tokens.h"
+#include "generated/tokens.gen.h"
 #include "xLR/types.h"
 #include "xLR/extfloat.h"
 #include "xLR/target.h"
@@ -38,8 +38,8 @@
 #define max(a, b)          ((a) > (b) ? (a) : (b))
 #define min(a, b)          ((a) < (b) ? (a) : (b))
 
-static uint32_t t_NUMBER(const char_t *input, Terminal *result, bool negative ,
-                         uint32_t adic, const Allocator *allocator);
+static uint32_t t_IDENTIFIER(const char_t *input, Terminal *result, const Allocator *allocator);
+static uint32_t t_NUMBER(const char_t *input, Terminal *result, bool negative, uint32_t adic, const Allocator *allocator);
 static uint32_t t_INT_DIGITS_adic16(const char_t *input, uint32_t *effective_length, uint256_t *value);
 static uint32_t t_INT_DIGITS_adic10(const char_t *input, uint32_t *effective_length, uint256_t *value);
 static uint32_t t_INT_DIGITS_adic8 (const char_t *input, uint32_t *effective_length, uint256_t *value);
@@ -51,9 +51,7 @@ static uint32_t t_FRAC_DIGITS_adic2 (const char_t *input, uint32_t *effective_le
 
 static uint32_t tokenize_number(const char_t * input, Terminal *  result, const Allocator * allocator);
 static uint32_t tokenize_single_char(const char_t *input, Terminal *result, const Allocator *allocator);
-static uint32_t tokenize_text(const char_t *input, uint32_t n_pred,
-                              const char_t *succ, uint32_t n_succ,
-                              Terminal *result, const Allocator *allocator);
+static uint32_t tokenize_text(const char_t *input, uint32_t n_pred, const char_t *succ, uint32_t n_succ, Terminal *result, const Allocator *allocator);
 
 static uint32_t try_keyword_if(const char_t *input, uint32_t offs, Terminal *result, uint64_t kw_as_ident, const Allocator *allocator);
 static uint32_t try_keyword_for(const char_t *input, uint32_t offs, Terminal *result, uint64_t kw_as_ident, const Allocator *allocator);
@@ -82,13 +80,14 @@ static uint32_t tokenize_symbol_MINUS(const char_t *input, Terminal *result, con
 
 static uint32_t try_pass_comment(const char *input, uint32_t *lineno, uint32_t *column);
 
-#define isSign(pText)             ((*(pText) == '-') || (*(pText) == '+'))
+#define isBuiltinIdentChar(pText)     ((*(pText) == '$'))
 #define isIdentHeader(pText)      (startswithLetter(pText) || (*(pText) == '_'))
 #define isIdentChar(pText)        (startswithLetter(pText) || isDecDigital(pText) || (*(pText) == '_'))
 
 #define startswithLetter(pText)   (('a' <= *(pText) && *(pText) <= 'z') || ('A' <= *(pText) && *(pText) <= 'Z'))
 #define isHexLetter(pText)        (('a' <= *(pText) && *(pText) <= 'f') || ('A' <= *(pText) && *(pText) <= 'F'))
 
+#define isSign(pText)             ((*(pText) == '-') || (*(pText) == '+'))
 #define isBinDigital(pText)       ('0' == *(pText) || *(pText) == '1')
 #define isOctDigital(pText)       ('0' <= *(pText) && *(pText) <= '7')
 #define isDecDigital(pText)       ('0' <= *(pText) && *(pText) <= '9')
@@ -386,17 +385,22 @@ uint32_t t_NUMBER(const char_t *const input, Terminal *const result,
 
 uint32_t t_IDENTIFIER(const char_t * const input, Terminal * const result, const Allocator * const allocator) {
   const char_t *pText = input;
+  bool builtin_ident = false;
   if (isIdentHeader(pText)) {
     pText++;
+  } else if (isBuiltinIdentChar(pText)) {
+    pText++; builtin_ident = true;
   } else {
     result->length = pText - input;
     return 0;
   }
   while (true) {
-    if (isIdentChar(pText)) { pText++; } else { break; }
+    if (isIdentChar(pText)) { pText++; }
+    else if (isBuiltinIdentChar(pText)) { pText++; builtin_ident = true; }
+    else { break; }
   }
   const uint32_t len = pText - input;
-  result->type = XLR_TOKEN_IDENTIFIER;
+  result->type = builtin_ident ? XLR_TOKEN_IDENTIFIER : XLR_TOKEN_BUILTIN_IDENTIFIER;
   result->value = allocator->calloc(len + 1, sizeof(char_t));
   allocator->memcpy(result->value, input, len);
   ((char_t *) result->value)[len] = '\0';
@@ -444,7 +448,7 @@ fn_try_keyword(enum, ENUM)
 fn_try_keyword(attr, ATTR)
 fn_try_keyword(token, TOKEN)
 fn_try_keyword(while, WHILE)
-fn_try_keyword_val(sizeof, SIZEOF, BUILTIN_FUNCTION, XLR_FUN_SIZEOF)
+fn_try_keyword_val(sizeof, SIZEOF, BUILTIN_IDENTIFIER, XLR_FUN_SIZEOF)
 
 #define fn_fall_through(len)                                      \
   do {                                                            \

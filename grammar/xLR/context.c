@@ -371,7 +371,7 @@ void LRContext_init(LRContext *context) {
     }
     REFER(char_t) type_name = Trie_get(context->ident_trie, BUILTIN_TYPES[(uint64_t) builtin_var->type].name);
     REFER(LRType) type = AVLTree_get(context->type_tree, (uint64_t) type_name);
-    LRVariable var = { .type = type, .name = v_ident, .count = builtin_var->count, .value = builtin_var->value };
+    LRVariable var = { .type = type, .name = v_ident, .count = builtin_var->count, .init = builtin_var->init };
     Array_append(context->var_array, &var, 1);
     REFER(LRVariable) v_var = Array_last_virt(context->var_array);
     AVLTree_set(context->var_tree, (uint64_t) v_ident, v_var);
@@ -535,12 +535,12 @@ inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain
 }
 
 
-#define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
-// #define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
+// #define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
+#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
 #define IN_ACTION_BLOCK(a) XLR_state_ATTR_IDENTIFIER_LEFT_BRACKET_##a
 // #define IN_STATEMENT(a) IN_ACTION_BLOCK(IF_IfCondition_##a)
-// #define IN_STATEMENT(a) IN_ACTION_BLOCK(FOR_ForCondition_##a)
-#define IN_STATEMENT(a) IN_ACTION_BLOCK(WHILE_IfCondition_##a)
+#define IN_STATEMENT(a) IN_ACTION_BLOCK(FOR_ForCondition_##a)
+// #define IN_STATEMENT(a) IN_ACTION_BLOCK(WHILE_IfCondition_##a)
 // #define IN_STATEMENT(a) IN_ACTION_BLOCK(CondStatement_ELSE_##a)
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {

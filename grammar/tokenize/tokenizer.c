@@ -27,7 +27,7 @@
 
 #include "tokenizer.h"
 #include "tokenize.h"
-#include "xLR/tokens.h"
+#include "generated/tokens.gen.h"
 #include "generated/xLR/action-table.gen.h"
 
 typedef struct Tokenizer {
