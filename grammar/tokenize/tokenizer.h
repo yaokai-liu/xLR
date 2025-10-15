@@ -30,15 +30,14 @@
 
 #include "xLR/token.h"
 #include "xLR/error.h"
-#include "array.h"
-#include "trie.h"
+#include "xLR/context.h"
 
 typedef struct Tokenizer Tokenizer;
 
-Tokenizer *XLRTokenizer_new(const char_t *src, Array *ident_array, Trie *ident_trie, const Allocator *allocator);
+Tokenizer *XLRTokenizer_new(const char_t *src, LRContext *context, const Allocator *allocator);
 
 uint32_t
-XLRTokenizer_next(Tokenizer *tokenizer, Token *token, ErrInfo *errInfo, bool in_pattern, uint64_t kw_as_ident, const Allocator *allocator);
+XLRTokenizer_next(Tokenizer *tokenizer, Token *token, ErrInfo *errInfo, const Allocator *allocator);
 
 void XLRTokenizer_destroy(Tokenizer *tokenizer);
 

@@ -19,48 +19,49 @@
  *
  * Project Name: xLR
  * Module Name: grammar/xLR
- * Filename: types.h
+ * Filename: category.h
  * Creator: Yaokai Liu
  * Create Date: 2025-05-31
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef XLR_GRAMMAR_XLR_TYPES_H
-#define XLR_GRAMMAR_XLR_TYPES_H
+#ifndef XLR_GRAMMAR_CATEGORY_H
+#define XLR_GRAMMAR_CATEGORY_H
 
 #include "xLR/char_t.h"
 #include "xLR/extint.h"
-#include "xLR/xlr.h"
 #include "array.h"
 #include "xLR/extfloat.h"
 
-enum XLR_TYPE_ENUM {
-  XLR_TYPE_BAD_TYPE = 0,
-  XLR_TYPE_CHAR,
-  XLR_TYPE_ENUM,
-  XLR_TYPE_TYPE,
-  XLR_TYPE_SYMBOL,
-  XLR_TYPE_RULE,
-  XLR_TYPE_ITEM,
-  XLR_TYPE_STATE,
-  XLR_TYPE_ACTION,
-  XLR_TYPE_RULE_KEY,
-  XLR_TYPE_ENV_KEY,
-  XLR_TYPE_USE_KEY,
-  XLR_TYPE_ACT_KEY,
+enum XLR_TYPE_CATEGORY_ENUM {
+  XLR_CATEGORY_BUILTIN,
+  XLR_CATEGORY_STRUCT,
+  XLR_CATEGORY_UNION,
+  XLR_CATEGORY_ARRAY,
+  XLR_CATEGORY_ENUM,
 };
+
+typedef struct {
+  uint32_t      type; // XLR_CATEGORY_ENUM
+  REFER(char_t) name;
+} Identifier;
 
 typedef struct LRType {
   uint32_t      type;
-  uint32_t      size;
-  // name of attribute
-  REFER(char_t) name;
   // if type
-  // is XLR_STRUCT_BUILTIN:     nullptr
-  // is XLR_STRUCT_TOKEN:       Array<LRVariable>
-  // is XLR_STRUCT_ENUM:        Array<EnumItem>
+  // is XLR_CATEGORY_ARRAY:    count of elements
+  // otherwise:                size of the type
+  uint32_t      size;
+  // name of type
+  REFER(Identifier) ident;
+  // if type
+  // is XLR_CATEGORY_BUILTIN:     nullptr
+  // is XLR_CATEGORY_STRUCT:      Array<LRVariable>
+  // is XLR_CATEGORY_UNION:       Array<LRVariable>
+  // is XLR_CATEGORY_ENUM:        Array<EnumItem>
+  // is XLR_CATEGORY_ARRAY:       REFER(LRType)
   void *        refer;
-  Array *       attrs;
+  Array *       attrs;  // Array<LRAttribute>
 } LRType;
 
 typedef struct LRValue {
@@ -85,31 +86,39 @@ typedef struct LRValue {
 typedef struct LRVariable {
   // type of variable
   REFER(LRType) type;
-  // name of variable
-  REFER(char_t) name;
-  LRValue *     count;
-  LRValue *     init;
-  Array *       attrs;
+  REFER(Identifier) ident;
+  Array * attrs;  // Array<LRAttribute>
 } LRVariable;
 
-typedef struct LROperate {
-  uint32_t    opcode;
-  LRVariable *result;
-  LRVariable *operand[2];
-} LROperate;
+typedef struct LRArgument {
+  // type of variable
+  REFER(LRType) type;
+  Array * attrs; // Array<LRAttribute>
+} LRArgument;
 
 typedef struct LRAttribute {
   // name of attribute
-  REFER(char_t) name;
-  uint64_t      value;
+  REFER(Identifier) ident;
+  Array            *args; // Array<Argument>
 } LRAttribute;
+
+typedef struct Parameter {
+  REFER(LRType)     type;
+  REFER(Identifier) ident;
+  Array            *attrs; // Array<LRAttribute>
+} LRParameter;
+
+typedef struct LRFunction {
+  REFER(Identifier)   ident;
+  REFER(LRType)       restype;
+  Array              *params; // Array<Parameter>
+  Array              *attrs; // Array<LRAttribute>
+  Array              *commands; // Array<uint8_t>
+} LRFunction;
 
 typedef struct LRSymbol LRSymbol;
 typedef struct LRState LRState;
 typedef struct LRItem LRItem;
 typedef struct LRRule LRRule;
 
-#define BUILTIN_TYPE_COUNT 16
-extern const LRType BUILTIN_TYPES[BUILTIN_TYPE_COUNT];
-
-#endif //XLR_GRAMMAR_XLR_TYPES_H
+#endif //XLR_GRAMMAR_CATEGORY_H

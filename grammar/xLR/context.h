@@ -36,43 +36,55 @@
 #include "dict.h"
 #include "set.h"
 #include "target.h"
-#include "types.h"
+#include "category.h"
 
 enum CONTEXT_OBJECT_TYPE_ENUM: uint32_t {
-  OBJECT_NULL,
-  OBJECT_IDENT,
-  OBJECT_PLAIN,
-  OBJECT_SYMBOL,
-  OBJECT_STATE,
-  OBJECT_RULE,
-  OBJECT_TYPE,
-  OBJECT_VAR,
-  OBJECT_TEXT,
-  OBJECT_BLOCK,
+  XLR_OBJECT_NULL,
+  XLR_OBJECT_NAME,
+
+  XLR_OBJECT_IDENT,
+  XLR_OBJECT_ENUM,
+  XLR_OBJECT_ATTR,
+  XLR_OBJECT_TYPE,
+  XLR_OBJECT_FUNC,
+  XLR_OBJECT_VAR,
+  XLR_OBJECT_TEXT,
+  XLR_OBJECT_BLOCK,
+
+  XLR_OBJECT_PLAIN,
+  XLR_OBJECT_SYMBOL,
+  XLR_OBJECT_STATE,
+  XLR_OBJECT_RULE,
+  XLR_OBJECT_LR_ITEM,
+  XLR_OBJECT_LR_ACTION,
+  XLR_OBJECT_RULE_KEY,
+  XLR_OBJECT_ENV_KEY,
+  XLR_OBJECT_USE_KEY,
+  XLR_OBJECT_ACT_KEY,
 };
 
 typedef enum SYMBOL_TYPE_ENUM : uint8_t {
-  SYMTYPE_BAD_TOKEN,
-  SYMTYPE_EMPTY,
-  SYMTYPE_TERMINATOR,
-  SYMTYPE_TERMINAL,
-  SYMTYPE_NON_TERMINAL,
+  XLR_SYMTYPE_BAD_TOKEN,
+  XLR_SYMTYPE_EMPTY,
+  XLR_SYMTYPE_TERMINATOR,
+  XLR_SYMTYPE_TERMINAL,
+  XLR_SYMTYPE_NON_TERMINAL,
 } symtype;
 
 typedef enum STATE_TYPE_ENUM : uint8_t {
-  STATYPE_NORMAL,
-  STATYPE_REPEAT,
+  XLR_STATE_TYPE_NORMAL,
+  XLR_STATE_TYPE_REPEAT,
 } statype;
 
 enum BUILTIN_SYMBOL_INDEX_ENUM {
-  SYM_INDEX_EMPTY = 0,
-  SYM_INDEX_TERMINATOR = 1,
-  SYM_INDEX_FINIAL = 2,
+  XLR_SYM_INDEX_EMPTY = 0,
+  XLR_SYM_INDEX_TERMINATOR = 1,
+  XLR_SYM_INDEX_FINIAL = 2,
 };
 
 enum BUILTIN_STATE_INDEX_ENUM {
-  STA_INDEX_BAD_STATE = 0,
-  STA_INDEX_INIT_STATE = 1,
+  XLR_STA_INDEX_BAD_STATE = 0,
+  XLR_STA_INDEX_INIT_STATE = 1,
 };
 
 typedef struct LRRulePair {
@@ -132,7 +144,7 @@ typedef struct LRSymbol {
    */
   Dict *envs;
   /*
-   * attributes defined by TokenDefinition
+   * attributes defined by TypeDefinition
    */
   Array *attr_array; // Array<LRVariable>
 } LRSymbol, LRTerminal;
@@ -154,10 +166,11 @@ typedef struct LRItem {
 
 typedef struct LRContext {
   const Allocator *allocator;
-  Array *ident_array;   // Array<char_t>
-  Trie  *ident_trie;    // Trie<REFER(char_t)>
+  Array *name_array;    // Array<char_t>
+  Array *ident_array;   // Array<Identifier>
+  Trie  *ident_trie;    // Trie<char_t, REFER(Identifier)>
   Array *plain_array;   // Array<uint64_t>
-  AVLTree *plain_tree;   // AVLTree<uint64_t, REFER(uint64_t)>
+  AVLTree *plain_tree;  // AVLTree<uint64_t, REFER(uint64_t)>
   Array *sym_array;     // Array<LRSymbol>
   AVLTree *sym_tree;    // AVLTree<REFER(union {char_t c;uint64_t p;}), REFER(LRSymbol)>
   Array *rule_array;    // Array<LRRule>
@@ -167,8 +180,11 @@ typedef struct LRContext {
   Array *text_array;    // Array<char_t>
   Array *block_array;   // Array<ActionBlock>
   Array *state_array;   // Array<LRState>
-  AVLTree *var_tree;  // AVLTree<REFER(char_t), REFER(Array<LRVariable>)>
-  Array   *var_array; // Array<Array<LRVariable>>
+  AVLTree *var_tree;    // AVLTree<REFER(char_t), REFER(Array<LRVariable>)>
+  Array *var_array;     // Array<Array<LRVariable>>
+  AVLTree *func_tree;   // AVLTree<REFER(char_t), REFER(LRFunction)>
+  Array *func_array;    // Array<LRFunction>
+  Trie *expr_trie;      // Trie<REFER(_any_), REFER(LRVariable)>
   REFER(ActionBlock) curr_block;
   INDEX(LRState) state;
   bool     in_pattern;
@@ -186,21 +202,21 @@ int32_t LRAction_cmp(const LRAction *a, const LRAction *b);
 uint64_t LREnvPair_hash(const LREnvPair *pair);
 uint64_t LRActKeyPair_hash(const LRActKeyPair *pair);
 
-#define LRRule_new_items() Array_new(sizeof(INDEX(LRSymbol)), XLR_TYPE_SYMBOL, context->allocator)
+#define LRRule_new_items() Array_new(sizeof(INDEX(LRSymbol)), XLR_OBJECT_SYMBOL, context->allocator)
 
-#define LRSymbol_new_rules() Array_new(sizeof(LRRulePair), XLR_TYPE_RULE, allocator)
+#define LRSymbol_new_rules() Array_new(sizeof(LRRulePair), XLR_OBJECT_RULE, allocator)
 #define LRSymbol_new_envs() Dict_new(sizeof(LREnvPair), sizeof_set, (unikey_t *) LREnvPair_hash, \
-  XLR_TYPE_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)
+  XLR_OBJECT_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)
 #define LRSymbol_new_firsts() Dict_new(sizeof(INDEX(LRTerminal)), sizeof_set, nullptr, \
-  XLR_TYPE_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, allocator)
+  XLR_OBJECT_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, allocator)
 
 #define LRState_new_actions() Dict_new(sizeof(LRActKeyPair), sizeof(LRAction), (unikey_t *) LRActKeyPair_hash, \
-  XLR_TYPE_ACT_KEY, nullptr, (destruct_t *) LRAction_release, context->allocator)
+  XLR_OBJECT_ACT_KEY, nullptr, (destruct_t *) LRAction_release, context->allocator)
 #define LRContext_new_ruleset() Set_new(sizeof(INDEX(LRRule)), \
-  XLR_TYPE_RULE_KEY, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)
+  XLR_OBJECT_RULE_KEY, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)
 
 #define LRSymbol_new()  {                     \
-  .symtype = SYMTYPE_TERMINAL,                \
+  .symtype = XLR_SYMTYPE_TERMINAL,            \
   .index = Array_length(context->sym_array),  \
   .rules = nullptr,                           \
   .firsts = nullptr,                          \
@@ -235,9 +251,11 @@ REFER(char_t) LRContent_new_text_content(LRContext *context, const char_t *text,
 
 REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain);
 
-#define LRContext_get_type(name)      AVLTree_get(context->type_tree, (uint64_t) Trie_get(context->ident_trie, name))
-#define LRContext_builtin_type(index) AVLTree_get(context->type_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_TYPES[index].name))
 #define LRContext_get_var(name)       AVLTree_get(context->var_tree, (uint64_t) Trie_get(context->ident_trie, name))
-#define LRContext_builtin_var(index)  AVLTree_get(context->var_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_TYPES[index].name))
+#define LRContext_builtin_var(index)  AVLTree_get(context->var_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_VARS[index].ident))
+#define LRContext_get_type(name)      AVLTree_get(context->type_tree, (uint64_t) Trie_get(context->ident_trie, name))
+#define LRContext_builtin_type(index) AVLTree_get(context->type_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_TYPES[index].ident))
+#define LRContext_get_func(name)      AVLTree_get(context->func_tree, (uint64_t) Trie_get(context->ident_trie, name))
+#define LRContext_builtin_func(index) AVLTree_get(context->func_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_FUNCS[index].ident))
 
 #endif  // XLR_LR_CONTEXT_H

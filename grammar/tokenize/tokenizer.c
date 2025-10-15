@@ -26,9 +26,11 @@
  **/
 
 #include "tokenizer.h"
+
+#include "avl-tree.h"
 #include "tokenize.h"
 #include "generated/tokens.gen.h"
-#include "generated/xLR/action-table.gen.h"
+#include "xLR/category.h"
 
 typedef struct Tokenizer {
   const Allocator *allocator;
@@ -36,15 +38,13 @@ typedef struct Tokenizer {
   uint32_t offset;
   uint32_t lineno;
   uint32_t column;
-  Array *  ident_array;  // Array<Identifier>
-  Trie *   ident_trie;   // Trie<char_t, Identifier>
+  LRContext *context;
 } Tokenizer;
 
-Tokenizer *XLRTokenizer_new(const char_t *src, Array *ident_array, Trie *ident_trie, const Allocator *allocator) {
+Tokenizer *XLRTokenizer_new(const char_t *src, LRContext *context, const Allocator *allocator) {
   Tokenizer *tokenizer = allocator->calloc(1, sizeof(Tokenizer));
-  tokenizer->ident_trie = ident_trie;
   tokenizer->allocator = allocator;
-  tokenizer->ident_array = ident_array;
+  tokenizer->context = context;
   tokenizer->lineno = 1;
   tokenizer->column = 1;
   tokenizer->src = src;
@@ -57,17 +57,18 @@ void XLRTokenizer_destroy(Tokenizer *tokenizer) {
 }
 
 #define pText (tokenizer->src + tokenizer->offset)
+#define CONTEXT (tokenizer->context)
 uint32_t XLRTokenizer_next(Tokenizer *tokenizer, Token *token, ErrInfo *errInfo,
-                           bool in_pattern, uint64_t kw_as_ident, const Allocator *allocator) {
+                           const Allocator *allocator) {
   tokenizer->offset += pass_space(pText, &tokenizer->lineno, &tokenizer->column);
   Terminal terminal = {};
   terminal.type = XLR_TOKEN_BAD_TOKEN;
   terminal.location.lineno = tokenizer->lineno;
   terminal.location.column = tokenizer->column;
   terminal.location.offset = tokenizer->offset;
-  const uint32_t length = (in_pattern)
-                        ? pattern_single_tokenize(pText, &terminal, kw_as_ident, allocator)
-                        : action_single_tokenize(pText, &terminal, kw_as_ident, allocator);
+  const uint32_t length = (CONTEXT->in_pattern)
+                        ? pattern_single_tokenize(pText, &terminal, CONTEXT->kw_as_ident, allocator)
+                        : action_single_tokenize(pText, &terminal, CONTEXT->kw_as_ident, allocator);
   if (terminal.type == XLR_TOKEN_BAD_TOKEN) {
     errInfo->pos.lineno = tokenizer->lineno;
     errInfo->pos.column = tokenizer->column;
@@ -75,12 +76,25 @@ uint32_t XLRTokenizer_next(Tokenizer *tokenizer, Token *token, ErrInfo *errInfo,
     errInfo->code = XLR_ERROR_UNRECOGNIZED_SYMBOL;
     return errInfo->code;
   }
-  if (terminal.type == XLR_TOKEN_IDENTIFIER) {
-    REFER(char_t) v_ident = Trie_get(tokenizer->ident_trie, terminal.value);
+  if (terminal.type == XLR_TOKEN_IDENTIFIER || terminal.type == XLR_TOKEN_BUILTIN_IDENTIFIER) {
+    REFER(Identifier) v_ident = Trie_get(CONTEXT->ident_trie, terminal.value);
     if (!v_ident) {
-      v_ident = Array_last_virt(tokenizer->ident_array) + 1;
-      Array_append(tokenizer->ident_array, terminal.value, terminal.length + 1);
-      Trie_set(tokenizer->ident_trie, terminal.value, v_ident);
+      REFER(char_t) v_name = Array_last_virt(CONTEXT->name_array) + 1;
+      Array_append(CONTEXT->name_array, terminal.value, terminal.length + 1);
+      Identifier ident = {.type = XLR_OBJECT_IDENT, .name = v_name};
+      Array_append(CONTEXT->ident_array, &ident, 1);
+      v_ident = Array_last_virt(CONTEXT->ident_array);
+      Trie_set(CONTEXT->ident_trie, terminal.value, v_ident);
+    } else if (!CONTEXT->in_pattern) {
+      const Identifier *ident = Array_virt2real(CONTEXT->ident_array, v_ident);
+      switch (ident->type) {
+        case XLR_OBJECT_ATTR: { terminal.type = XLR_TOKEN_ATTRNAME;  break;   }
+        case XLR_OBJECT_TYPE: { terminal.type = XLR_TOKEN_TYPENAME;  break;   }
+        case XLR_OBJECT_RULE: { terminal.type = XLR_TOKEN_RULENAME;  break;   }
+        case XLR_OBJECT_FUNC: { terminal.type = XLR_TOKEN_FUNCNAME;  break;   }
+        case XLR_OBJECT_ENUM: { terminal.type = XLR_TOKEN_ENUM_GROUP;  break; }
+        default:;
+      }
     }
     allocator->free(terminal.value);
     terminal.value = v_ident;

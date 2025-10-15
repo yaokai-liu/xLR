@@ -28,10 +28,8 @@
 #ifndef XLR_GRAMMAR_XLR_TARGET_H
 #define XLR_GRAMMAR_XLR_TARGET_H
 
-#include "types.h"
+#include "category.h"
 #include "avl-tree.h"
-
-typedef char_t Identifier;
 
 typedef struct GrammarEntry {
 
@@ -46,38 +44,59 @@ typedef struct LRPattern {
   LRTokens *tokens;
 } LRPattern;
 
-typedef Array Arguments, EnumItems;
+typedef struct Argument {
+
+} Argument;
+typedef Array Arguments; // Array<Argument>
 
 typedef struct {
-  REFER(Identifier) name;
-  LRValue *         value;
+  REFER(Identifier) ident;
+  LRValue *     value;
 } EnumItem;
 
-typedef LRType EnumDeclaration, TokenDefinition;
+typedef Array EnumItems; // Array<EnumItem>
+
+typedef LRType EnumDeclaration, TypeDefinition, Type, TypeRenaming;
 
 typedef struct AttrDefinition {
 
-} AttrDefinition;
+} AttrDefinition, AttrRenaming;
 
 typedef LRRule RuleDefinition;
+typedef LRFunction FuncDefinition;
 
-struct Expression {
-  uint64_t type;
-  void *lhs;
-  void *rhs;
-};
+typedef LRVariable Expression;
 
-typedef struct Expression Expr, CondExpr, CompExpr;
-typedef struct Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;
-typedef struct Expression AssignExpr, Assignable, Accessed, Attributed, Subscribed, Subscriber;
-typedef struct Expression Evaluable, IntegratedExpr, FunctionCall;
-typedef struct Expression OptionalLoopInitExpr, OptionalLoopUpdateExpr, OptionalLoopCondExpr;
+typedef Expression Expr, CondExpr, CompExpr;
+typedef Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;
+typedef Expression AssignExpr, Assignable, Accessed, Attributed, Subscribed, Subscriber;
+typedef Expression OptionalLoopInitExpr, OptionalLoopUpdateExpr, OptionalLoopCondExpr;
+typedef Expression Evaluable, IntegratedExpr, FunctionCall;
 
 typedef AssignExpr ArrayInitExpr;
 
 typedef LRVariable Variable;
-typedef Array AttrList, VarList, Declaration, Declarations; // Array<LRVariable>
+typedef Array VarList, Declaration, Declarations; // Array<LRVariable>
 typedef Array ArrayInitExprList; // Array<ArithExpr>
+
+typedef Array AttrList; // Array<LRAttribute>
+
+typedef LRParameter Parameter;
+typedef Array   Parameters; // Array<Parameter>
+
+typedef struct InitializerHinter {
+  REFER(LRVariable)     habitat;
+  uint32_t              offset;
+  // count of elements if is an array
+  uint32_t              count;
+  REFER(LRType)         type;
+} InitializerHinter;
+
+typedef struct VariableInitializer {
+
+} VariableInitializer;
+typedef VariableInitializer StructuredInitializer;
+typedef Array VariableInitializerList;
 
 typedef struct ActionBlock ActionBlock;
 struct ActionBlock {
@@ -108,12 +127,12 @@ typedef struct WrapperedText {
 } WrapperedText;
 
 ActionBlock *ActionBlock_new(const Allocator *allocator);
-#define AttrList_new(allocator) Array_new(sizeof(LRAttribute), XLR_TOKEN_ATTR, allocator)
+#define AttrList_new(allocator) Array_new(sizeof(LRAttribute), XLR_TOKEN_ATTRIBUTE, allocator)
 
 void releaseActionBlock(ActionBlock *, const Allocator *);
 void releaseRuleDefinition(RuleDefinition *, const Allocator *);
 void releaseDeclaration(Declaration *, const Allocator *);
-void releaseTokenDefinition(TokenDefinition *, const Allocator *);
+void releaseTypeDefinition(TypeDefinition *, const Allocator *);
 void releaseActionStatement(ActionStatement *, const Allocator *);
 void releaseGrammarEntry(GrammarEntry *, const Allocator *);
 void releaseIfCondition(IfCondition *, const Allocator *);

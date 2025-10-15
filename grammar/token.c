@@ -60,7 +60,7 @@ void releaseToken(Token *token, const Allocator *allocator) {
     releaseTokenCase(ActionBlock, ActionBlock)
     releaseTokenCase(RuleDefinition, RuleDefinition)
     releaseTokenCase(Declaration, Declaration)
-    releaseTokenCase(TokenDefinition, TokenDefinition)
+    releaseTokenCase(TypeDefinition, TypeDefinition)
     releaseTokenCase(ActionStatement, ActionStatement)
     releaseTokenCase(GrammarEntry, GrammarEntry)
     releaseTokenCase(IfCondition, IfCondition)

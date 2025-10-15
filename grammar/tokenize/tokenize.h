@@ -35,6 +35,6 @@
 uint32_t action_single_tokenize(const char_t *input, Terminal *result, uint64_t kw_as_ident, const Allocator *allocator);
 uint32_t pattern_single_tokenize(const char_t *input, Terminal *result, uint64_t kw_as_ident, const Allocator *allocator);
 uint32_t pass_space(const char *input, uint32_t *lineno, uint32_t *column);
-void terminal2Token(Terminal *terminal, Token *token);
+void terminal2Token(const Terminal *terminal, Token *token);
 
 #endif //XLR_GRAMMAR_TOKENIZE_TOKENIZE_H

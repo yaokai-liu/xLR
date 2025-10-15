@@ -28,11 +28,10 @@ if (ENABLE_GPROF)
 endif ()
 
 set(XLR_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/grammar/generated")
-set(XLR_GEN_TOKEN_ENUM_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/grammar/generated/tokens.gen.h")
-if(NOT EXISTS ${XLR_GENERATED_DIR} OR NOT EXISTS ${XLR_TOKEN_ENUM_HEADER})
+if(NOT EXISTS ${XLR_GENERATED_DIR})
     message(STATUS "${XLR_GENERATED_DIR} doesn't exist or not complete, generate grammar action table.")
     execute_process(COMMAND /bin/sh ${CMAKE_CURRENT_SOURCE_DIR}/codegen.sh
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 else()
     message(STATUS "${XLR_GENERATED_DIR} exists, skip to generate grammar action table.")
 endif()

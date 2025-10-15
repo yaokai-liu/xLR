@@ -26,6 +26,7 @@
  **/
 
 #include "target.h"
+#include "xLR/xlr.h"
 #include "generated/tokens.gen.h"
 
 ActionBlock *ActionBlock_new(const Allocator *allocator) {
@@ -48,7 +49,7 @@ void releaseDeclaration(Declaration *, const Allocator *) {
 
 }
 
-void releaseTokenDefinition(TokenDefinition *, const Allocator *) {
+void releaseTypeDefinition(TypeDefinition *, const Allocator *) {
 
 }
 

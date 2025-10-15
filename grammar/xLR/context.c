@@ -26,11 +26,15 @@
  **/
 
 #include "context.h"
+#ifdef XLR_ENABLE_DEBUG
+#include <stdio.h>
+#endif
 #include "xLR/char_t.h"
 #include "generated/xLR/action-table.gen.h"
 #include "target.h"
 #include <string.h>
-#include "vars.h"
+#include "builtin.h"
+#include "enum.h"
 
 #define Array_foreach(type, _array, doing)              \
   do {                                                  \
@@ -164,7 +168,7 @@ inline void LRSymbol_build_first_set(LRContext *context, INDEX(LRSymbol) i_sym) 
 #define LRSymbol_add_using(dict, first, i_rule) do {            \
   Set *rules = Dict_get((dict), first);                         \
   if (!rules) {                                                 \
-    rules = Set_new(sizeof(INDEX(LRRule)), XLR_TYPE_RULE_KEY,   \
+    rules = Set_new(sizeof(INDEX(LRRule)), XLR_OBJECT_RULE_KEY, \
                     nullptr, nullptr, context->allocator);      \
     Record_set_rule(rules, i_rule, enable);                     \
   }                                                             \
@@ -174,8 +178,8 @@ inline void LRSymbol_build_first_set(LRContext *context, INDEX(LRSymbol) i_sym) 
 void LRSymbol_add_rule(LRContext *context, INDEX(LRSymbol) i_sym, INDEX(LRRule) i_rule, uint64_t enable) {
   const Allocator *allocator = context->allocator;
   LRSymbol *sym = Array_real_addr(context->sym_array, i_sym);
-  if (sym->symtype == SYMTYPE_TERMINAL) { sym->symtype = SYMTYPE_NON_TERMINAL; }
-  if (!sym->rules) { sym->rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator); }
+  if (sym->symtype == XLR_SYMTYPE_TERMINAL) { sym->symtype = XLR_SYMTYPE_NON_TERMINAL; }
+  if (!sym->rules) { sym->rules = Array_new(sizeof(LRRulePair), XLR_OBJECT_RULE_KEY, allocator); }
   else {
     Array_foreach(LRRulePair, sym->rules, {
       if (__element->rule == i_rule) {
@@ -188,7 +192,7 @@ void LRSymbol_add_rule(LRContext *context, INDEX(LRSymbol) i_sym, INDEX(LRRule) 
   Array_append(sym->rules, &pair, 1);
   __changed_rule_enable:
   if (!sym->firsts) {
-    sym->firsts = Dict_new(sizeof(INDEX(LRTerminal)), sizeof_set, nullptr, XLR_TYPE_SYMBOL,
+    sym->firsts = Dict_new(sizeof(INDEX(LRTerminal)), sizeof_set, nullptr, XLR_OBJECT_SYMBOL,
                            nullptr, (destruct_t *) LRRuleSet_release, allocator);
   }
   LRSymbol_update_first_set(context, i_sym, i_rule, enable);
@@ -206,7 +210,7 @@ inline void LRSymbol_update_first_set(LRContext *context, const INDEX(LRSymbol) 
   } else {
     INDEX(LRSymbol) first = *(INDEX(LRSymbol) *) Array_first_real(rule->items);
     const LRSymbol *first_sym = Array_real_addr(context->sym_array, first);
-    if (first_sym->symtype == SYMTYPE_NON_TERMINAL) {
+    if (first_sym->symtype == XLR_SYMTYPE_NON_TERMINAL) {
       Dict_foreach_key(INDEX(LRSymbol), LRUsePair, first_sym->firsts, {
         LRSymbol_add_using(sym->firsts, __key, &i_rule);
       });
@@ -220,7 +224,7 @@ inline void LRSymbol_set_env(const LRContext *context, INDEX(LRSymbol) i_sym, co
   LRSymbol *sym = Array_real_addr(context->sym_array, i_sym);
   INDEX(LRSymbol) look = LRItem_ahead(context, item);
   const LRSymbol *look_sym = Array_real_addr(context->sym_array, look);
-  if (look_sym->symtype == SYMTYPE_NON_TERMINAL) {
+  if (look_sym->symtype == XLR_SYMTYPE_NON_TERMINAL) {
     Dict_foreach_key(INDEX(LRSymbol), LRUsePair, look_sym->firsts, {
       LREnvPair pair = {};
       pair.state = item->state;
@@ -257,7 +261,7 @@ inline void LRItem_build_closure(const LRContext *context, Array *item_array) {
       if (LRItem_isEnd(context, item)) { continue; }
       const INDEX(LRSymbol) cur_sym_index = LRItem_current(context, item);
       const LRSymbol * const cur_sym = Array_real_addr(context->sym_array, cur_sym_index);
-      if (cur_sym->symtype == SYMTYPE_NON_TERMINAL) {
+      if (cur_sym->symtype == XLR_SYMTYPE_NON_TERMINAL) {
         INDEX(LRSymbol) look = LRItem_ahead(context, item);
         LRItem sub_item = {.state = item->state, .look = look, .pos = 0};
         Array_foreach(LRRulePair, cur_sym->rules, {
@@ -301,7 +305,7 @@ LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, 
   LRAction *action = Dict_get(state->actions, &key);
   if (!action) {
     const INDEX(LRState) index = Array_length(context->state_array);
-    LRState new_state = { .type = STATYPE_NORMAL, .count = 0, .index = index, .actions = LRState_new_actions() };
+    LRState new_state = { .type = XLR_STATE_TYPE_NORMAL, .count = 0, .index = index, .actions = LRState_new_actions() };
     Array_append(context->state_array, &new_state, 1);
     LRAction new_action = { .acttype = ACTTYPE_STACK, .rules = LRContext_new_ruleset(), .index = new_state.index };
     Dict_set(state->actions, &key, &new_action);
@@ -317,21 +321,25 @@ LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, 
 LRContext *LRContext_new(const Allocator *allocator) {
   LRContext *context = allocator->calloc(1, sizeof(LRContext));
   context->allocator = allocator;
-  context->ident_array = Array_new(sizeof(uint8_t), OBJECT_IDENT, allocator);
-  context->ident_trie = Trie_new(sizeof(char_t), char2u64, allocator);
-  context->plain_array = Array_new(sizeof(uint64_t), OBJECT_PLAIN, allocator);
+  context->name_array = Array_new(sizeof(char_t), XLR_OBJECT_NAME, allocator);
+  context->ident_trie = Trie_new(sizeof(char_t), (fn_key_t *) char2u64, allocator);
+  context->ident_array = Array_new(sizeof(Identifier), XLR_OBJECT_IDENT, allocator);
+  context->plain_array = Array_new(sizeof(uint64_t), XLR_OBJECT_PLAIN, allocator);
   context->plain_tree = AVLTree_new(allocator, nullptr);
-  context->sym_array = Array_new(sizeof(LRSymbol), OBJECT_SYMBOL, allocator);
+  context->sym_array = Array_new(sizeof(LRSymbol), XLR_OBJECT_SYMBOL, allocator);
   context->sym_tree = AVLTree_new(allocator, nullptr);
-  context->rule_array = Array_new(sizeof(LRRule), OBJECT_RULE, allocator);
+  context->rule_array = Array_new(sizeof(LRRule), XLR_OBJECT_RULE, allocator);
   context->rule_tree = AVLTree_new(allocator, nullptr);
-  context->type_array = Array_new(sizeof(LRType), OBJECT_TYPE, allocator);
+  context->type_array = Array_new(sizeof(LRType), XLR_OBJECT_TYPE, allocator);
   context->type_tree = AVLTree_new(allocator, nullptr);
-  context->var_array = Array_new(sizeof(LRVariable), OBJECT_VAR, allocator);
+  context->var_array = Array_new(sizeof(LRVariable), XLR_OBJECT_VAR, allocator);
   context->var_tree = AVLTree_new(allocator, nullptr);
-  context->text_array = Array_new(sizeof(char_t), OBJECT_TEXT, allocator);
-  context->block_array = Array_new(sizeof(ActionBlock), OBJECT_BLOCK, allocator);
-  context->state_array = Array_new(sizeof(LRState), OBJECT_STATE, allocator);
+  context->func_array = Array_new(sizeof(LRVariable), XLR_OBJECT_FUNC, allocator);
+  context->func_tree = AVLTree_new(allocator, nullptr);
+  context->text_array = Array_new(sizeof(char_t), XLR_OBJECT_TEXT, allocator);
+  context->block_array = Array_new(sizeof(ActionBlock), XLR_OBJECT_BLOCK, allocator);
+  context->state_array = Array_new(sizeof(LRState), XLR_OBJECT_STATE, allocator);
+  context->expr_trie = Trie_new(sizeof(REFER(void)), (fn_key_t *)refer2u64, allocator);
   context->in_pattern = false;
 
   LRContext_init(context);
@@ -345,66 +353,91 @@ void LRContext_init(LRContext *context) {
   // Builtin Types
   for (uint32_t i = 0; i < BUILTIN_TYPE_COUNT; i ++) {
     const LRType *builtin_type = &BUILTIN_TYPES[i];
-    REFER(char_t) v_ident = Trie_get(context->ident_trie, builtin_type->name);
+    const char_t *name = (char_t *) builtin_type->ident;
+    REFER(Identifier) v_ident = Trie_get(context->ident_trie, name);
     if (!v_ident) {
-      v_ident = Array_last_virt(context->ident_array) + 1;
-      Trie_set(context->ident_trie, builtin_type->name, v_ident);
-      Array_append(context->ident_array, builtin_type->name, strlen(builtin_type->name) + 1);
+      REFER(char_t) v_name = Array_last_virt(context->name_array) + 1;
+      Array_append(context->name_array, name, strlen(name) + 1);
+      Identifier ident = {.type = XLR_OBJECT_TYPE, .name = v_name};
+      Array_append(context->ident_array, &ident, 1);
+      v_ident = Array_last_virt(context->ident_array);
+      Trie_set(context->ident_trie, name, v_ident);
     }
     LRType type = {
       .type = builtin_type->type, .size = builtin_type->size,
-      .name = v_ident, .refer = builtin_type->refer
+      .ident = v_ident, .refer = builtin_type->refer
     };
     Array_append(context->type_array, &type, 1);
     REFER(LRType) v_type = Array_last_virt(context->type_array);
     AVLTree_set(context->type_tree, (uint64_t) v_ident, v_type);
   }
-
   // Builtin Variables
   for (uint32_t i = 0; i < BUILTIN_VAR_COUNT; i ++) {
     const LRVariable *builtin_var = &BUILTIN_VARS[i];
-    REFER(char_t) v_ident = Trie_get(context->ident_trie, builtin_var->name);
+    const char_t *name = (char_t *) builtin_var->ident;
+    REFER(Identifier) v_ident = Trie_get(context->ident_trie, name);
     if (!v_ident) {
-      v_ident = Array_last_virt(context->ident_array) + 1;
-      Trie_set(context->ident_trie, builtin_var->name, v_ident);
-      Array_append(context->ident_array, builtin_var->name, strlen(builtin_var->name) + 1);
+      REFER(char_t) v_name = Array_last_virt(context->name_array) + 1;
+      Array_append(context->name_array, name, strlen(name) + 1);
+      Identifier ident = {.type = XLR_OBJECT_VAR, .name = v_name};
+      Array_append(context->ident_array, &ident, 1);
+      v_ident = Array_last_virt(context->ident_array);
+      Trie_set(context->ident_trie, name, v_ident);
     }
-    REFER(char_t) type_name = Trie_get(context->ident_trie, BUILTIN_TYPES[(uint64_t) builtin_var->type].name);
+    REFER(char_t) type_name = Trie_get(context->ident_trie, BUILTIN_TYPES[(uint64_t) builtin_var->type].ident);
     REFER(LRType) type = AVLTree_get(context->type_tree, (uint64_t) type_name);
-    LRVariable var = { .type = type, .name = v_ident, .count = builtin_var->count, .init = builtin_var->init };
+    LRVariable var = { .type = type, .ident = v_ident };
     Array_append(context->var_array, &var, 1);
     REFER(LRVariable) v_var = Array_last_virt(context->var_array);
     AVLTree_set(context->var_tree, (uint64_t) v_ident, v_var);
+  }
+  // Builtin Variables
+  for (uint32_t i = 0; i < BUILTIN_FUNC_COUNT; i ++) {
+    const LRFunction *builtin_func = &BUILTIN_FUNCS[i];
+    const char_t *name = (char_t *) builtin_func->ident;
+    REFER(Identifier) v_ident = Trie_get(context->ident_trie, name);
+    if (!v_ident) {
+      REFER(char_t) v_name = Array_last_virt(context->name_array) + 1;
+      Array_append(context->name_array, name, strlen(name) + 1);
+      Identifier ident = {.type = XLR_OBJECT_VAR, .name = v_name};
+      Array_append(context->ident_array, &ident, 1);
+      v_ident = Array_last_virt(context->ident_array);
+      Trie_set(context->ident_trie, name, v_ident);
+    }
+    LRFunction func = { .ident = v_ident, .params = nullptr, .restype = nullptr, .attrs = nullptr };
+    Array_append(context->func_array, &func, 1);
+    REFER(LRVariable) v_func = Array_last_virt(context->func_array);
+    AVLTree_set(context->func_tree, (uint64_t) v_ident, v_func);
   }
 
   // Builtin Pattern Symbols
   LRSymbol BUILTIN_SYMBOLS[] = {
     // SYM EMPTY
-    [SYM_INDEX_EMPTY] = { .symtype = SYMTYPE_EMPTY, .index = SYM_INDEX_EMPTY, .rules = nullptr, .firsts = nullptr, .envs = nullptr },
+    [XLR_SYM_INDEX_EMPTY] = { .symtype = XLR_SYMTYPE_EMPTY, .index = XLR_SYM_INDEX_EMPTY, .rules = nullptr, .firsts = nullptr, .envs = nullptr },
     // SYM TERMINATOR
-    [SYM_INDEX_TERMINATOR] = { .symtype = SYMTYPE_TERMINATOR, .index = SYM_INDEX_TERMINATOR, .rules = nullptr, .firsts = nullptr, .envs = nullptr },
+    [XLR_SYM_INDEX_TERMINATOR] = { .symtype = XLR_SYMTYPE_TERMINATOR, .index = XLR_SYM_INDEX_TERMINATOR, .rules = nullptr, .firsts = nullptr, .envs = nullptr },
     // SYM FINIAL
-    [SYM_INDEX_FINIAL] = {
-        .symtype = SYMTYPE_NON_TERMINAL, .index = SYM_INDEX_FINIAL,
-        .rules = Array_new(sizeof(LRRulePair), XLR_TYPE_RULE_KEY, allocator),
+    [XLR_SYM_INDEX_FINIAL] = {
+        .symtype = XLR_SYMTYPE_NON_TERMINAL, .index = XLR_SYM_INDEX_FINIAL,
+        .rules = Array_new(sizeof(LRRulePair), XLR_OBJECT_RULE_KEY, allocator),
         .firsts = LRSymbol_new_firsts(), .envs = LRSymbol_new_envs()
     }
   };
-  LREnvPair pair = { .state = STA_INDEX_INIT_STATE, .follow = SYM_INDEX_TERMINATOR };
+  LREnvPair pair = { .state = XLR_STA_INDEX_INIT_STATE, .follow = XLR_SYM_INDEX_TERMINATOR };
   Set *rule_set = LRContext_new_ruleset();
-  Dict_set(BUILTIN_SYMBOLS[SYM_INDEX_FINIAL].envs, &pair, rule_set);
+  Dict_set(BUILTIN_SYMBOLS[XLR_SYM_INDEX_FINIAL].envs, &pair, rule_set);
   Array_append(context->sym_array, BUILTIN_SYMBOLS, 3);
 
   // Builtin States
   const LRState BAD_STATE = {};
   Array_append(context->state_array, &BAD_STATE, 1);
-  const LRState INIT_STATE = { .type = STATYPE_NORMAL, .index = STA_INDEX_INIT_STATE,
+  const LRState INIT_STATE = { .type = XLR_STATE_TYPE_NORMAL, .index = XLR_STA_INDEX_INIT_STATE,
                                 .count = 1, .actions = LRState_new_actions() };
   Array_append(context->state_array, &INIT_STATE, 1);
-  context->state = STA_INDEX_INIT_STATE;
+  context->state = XLR_STA_INDEX_INIT_STATE;
 
   // Builtin Rules
-  const LRRule BAD_RULE = { .items = nullptr, .target = SYM_INDEX_EMPTY, .enabled = false };
+  const LRRule BAD_RULE = { .items = nullptr, .target = XLR_SYM_INDEX_EMPTY, .enabled = false };
   Array_append(context->rule_array, &BAD_RULE, 1);
 }
 
@@ -441,10 +474,10 @@ inline uint32_t LRContext_set_rule(LRContext *context, INDEX(LRRule) i_rule, boo
     context->error = XLR_ERROR_DUPLICATED_SET_RULE;
     return context->error;
   }
-  Array *item_array = Array_new(sizeof(LRItem), XLR_TYPE_ITEM, context->allocator);
+  Array *item_array = Array_new(sizeof(LRItem), XLR_OBJECT_LR_ITEM, context->allocator);
   LRContext_enumerate_items(context, i_rule, item_array);
   while (Array_length(item_array) > 0) {
-    Array *next_item_array = Array_new(sizeof(LRItem), XLR_TYPE_ITEM, context->allocator);
+    Array *next_item_array = Array_new(sizeof(LRItem), XLR_OBJECT_LR_ITEM, context->allocator);
     const uint32_t n_items = Array_length(item_array);
     const LRItem * const items = Array_first_real(item_array);
     for (uint32_t i = 0; i < n_items; i++) {
@@ -535,28 +568,25 @@ inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain
 }
 
 
-// #define IN_RULE(a) XLR_state_IDENTIFIER_IDENTIFIER_##a
-#define IN_RULE(a) XLR_state_TokenDefinition_IDENTIFIER_##a
-#define IN_ACTION_BLOCK(a) XLR_state_ATTR_IDENTIFIER_LEFT_BRACKET_##a
-// #define IN_STATEMENT(a) IN_ACTION_BLOCK(IF_IfCondition_##a)
-#define IN_STATEMENT(a) IN_ACTION_BLOCK(FOR_ForCondition_##a)
-// #define IN_STATEMENT(a) IN_ACTION_BLOCK(WHILE_IfCondition_##a)
-// #define IN_STATEMENT(a) IN_ACTION_BLOCK(CondStatement_ELSE_##a)
+#define IN_RULE(a) XLR_state_Type_AttrList_IDENTIFIER_##a
+#define IN_ACTION_BLOCK(a) XLR_state_AttrList_ATTRIBUTE_IDENTIFIER_LEFT_BRACKET_##a
+#define IN_STATEMENT(a) IN_ACTION_BLOCK(IF_IfCondition_##a)
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {
   switch (state) {
       case IN_RULE(LEFT_PARENTHESIS): {
-      context->in_pattern = true; break;
+      context->in_pattern = true; return;
     }
     case IN_RULE(LEFT_PARENTHESIS_Pattern): {
-      context->in_pattern = false; break;
+      context->in_pattern = false; return;
     }
-    case XLR_state_ATTR_IDENTIFIER_LEFT_BRACKET:
+    case XLR_state_AttrList_ATTRIBUTE_IDENTIFIER_LEFT_BRACKET:
     case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET): {
       ActionBlock *block = ActionBlock_new(allocator);
       Array_append(context->block_array, block, 1);
       context->curr_block = Array_last_virt(context->block_array);
-      break;
+      context->kw_as_ident = XLR_KW_AS_IDENT;
+      return;
     }
     case IN_STATEMENT(LEFT_BRACKET):
     case IN_ACTION_BLOCK(LEFT_BRACKET): {
@@ -564,19 +594,24 @@ void LRContext_state_action(LRContext *context, uint32_t state, Token *, const A
       block->parent = context->curr_block;
       Array_append(context->block_array, block, 1);
       context->curr_block = Array_last_virt(context->block_array);
-      break;
+      return;
     }
     case IN_STATEMENT(ActionBlock):
     case IN_ACTION_BLOCK(ActionBlock): {
       const ActionBlock *block = Array_virt2real(context->block_array, context->curr_block);
       context->curr_block = block->parent;
-      break;
+      return;
     }
-    case XLR_state_ATTR_IDENTIFIER_ActionBlock:
+    case XLR_state_AttrList_ATTRIBUTE_IDENTIFIER_ActionBlock:
     case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_ActionBlock): {
+      context->kw_as_ident = XLR_KW_AS_IDENT;
       context->curr_block = nullptr;
-      break;
+      return;
     }
-    default:{}
+    default: {
+#ifdef XLR_ENABLE_DEBUG
+        printf("nothing context to do at this state: %d.\n", state);
+#endif
+      }
   }
 }

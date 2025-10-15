@@ -30,7 +30,7 @@
 #include "tokenize/tokenize.h"
 #include "generated/tokens.gen.h"
 #include "string_t.h"
-#include "xLR/types.h"
+#include "xLR/category.h"
 #include "enum.h"
 #include "xLR/extfloat.h"
 #include "xLR/target.h"

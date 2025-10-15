@@ -37,8 +37,18 @@ struct grammar_action {
     XLR_action_stack = 1,
     XLR_action_reduce = 2
   } action      : 4;
+  // if action
+  // is reduce:     count of tokens to eliminate
+  // otherwise:     0
   uint8_t count : 4;
+  // if action
+  // is reduce:     index of type of the result token
+  // otherwise:     0
   uint8_t type;
+  // if action
+  // is reduce:     index of the rule to implay
+  // is stack:      index of the next state
+  // otherwise:     0
   const uint16_t offset;
 };
 

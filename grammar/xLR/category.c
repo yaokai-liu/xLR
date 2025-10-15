@@ -19,20 +19,11 @@
  *
  * Project Name: xLR
  * Module Name: grammar/xLR
- * Filename: vars.h
+ * Filename: category.c
  * Creator: Yaokai Liu
- * Create Date: 2025-09-19
+ * Create Date: 2025-06-16
  * Copyright (c) 2025 Yaokai Liu. All rights reserved.
  **/
 
-#ifndef XLR_VARS_H
-#define XLR_VARS_H
+#include "category.h"
 
-#include "types.h"
-
-#define BUILTIN_VAR_COUNT   2
-#define BUILTIN_VAR_NAMES   "CONTEXT\0TOKENS\0"
-
-extern const LRVariable BUILTIN_VARS[BUILTIN_VAR_COUNT];
-
-#endif //XLR_VARS_H
