@@ -70,9 +70,10 @@ uint32_t XLRTokenizer_next(Tokenizer *tokenizer, Token *token, ErrInfo *errInfo,
                         ? pattern_single_tokenize(pText, &terminal, CONTEXT->kw_as_ident, allocator)
                         : action_single_tokenize(pText, &terminal, CONTEXT->kw_as_ident, allocator);
   if (terminal.type == XLR_TOKEN_BAD_TOKEN) {
-    errInfo->pos.lineno = tokenizer->lineno;
-    errInfo->pos.column = tokenizer->column;
-    errInfo->pos.offset = tokenizer->offset;
+    errInfo->start.lineno = tokenizer->lineno;
+    errInfo->start.column = tokenizer->column;
+    errInfo->start.offset = tokenizer->offset;
+    errInfo->end = errInfo->start;
     errInfo->code = XLR_ERROR_UNRECOGNIZED_SYMBOL;
     return errInfo->code;
   }

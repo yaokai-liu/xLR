@@ -113,7 +113,7 @@ typedef struct ActionStatement {
   void *action;
 } ActionStatement;
 
-typedef ActionStatement IfStatement, ForStatement, WhileStatement, CondStatement;
+typedef ActionStatement IfStatement, ForStatement, WhileStatement, CondStatement, ControlStatement;
 
 typedef CondExpr IfCondition, ForCondition;
 

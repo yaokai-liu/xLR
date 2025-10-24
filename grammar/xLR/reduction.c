@@ -52,8 +52,33 @@
     }                                                   \
   } while (false)
 
-Accessed * XLR_Accessed_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Accessed * XLR_Accessed_0 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *){
+  const IntegratedExpr *integrated_expr = args[0].value;
+  const Identifier *field_name = args[2].value;
+
+  const REFER(LRType) v_type = integrated_expr->type;
+  const LRType *type = Array_virt2real(context->type_array, v_type);
+  if (type->cat != XLR_CATEGORY_STRUCT && type->cat != XLR_CATEGORY_UNION) {
+    errInfo->code = XLR_ERROR_ACCESS_NONE_FIELD_TYPE;
+    errInfo->start = args[1].start;
+    errInfo->end = args[1].end;
+    return nullptr;
+  }
+  const Array *field_array = type->refer;
+  const uint32_t field_count = Array_length(field_array);
+  const LRVariable *fields = Array_first_real(field_array);
+  for (uint32_t i = 0; i < field_count; i++) {
+    if (fields[i].ident == field_name) {
+      const AVLTree *field_mapping = integrated_expr->refer;
+      const REFER(LRVariable) v_var = AVLTree_get(field_mapping, (uint64_t) field_name);
+      return Array_virt2real(context->var_array, v_var);
+    }
+  } /* field not found */ {
+    errInfo->code = XLR_ERROR_NO_SUCH_FIELD;
+    errInfo->start = args[2].start;
+    errInfo->end = args[2].end;
+    return nullptr;
+  }
 }
 
 ActionBlock * XLR_ActionBlock_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
@@ -277,6 +302,18 @@ CondStatement * XLR_CondStatement_2 (Token [], LRContext *, ErrInfo *, const All
 }
 
 CondStatement * XLR_CondStatement_3 (Token [], LRContext *, ErrInfo *, const Allocator *){
+  return nullptr;
+}
+
+ControlStatement * XLR_ControlStatement_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
+  return nullptr;
+}
+
+ControlStatement * XLR_ControlStatement_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
+  return nullptr;
+}
+
+ControlStatement * XLR_ControlStatement_2 (Token [], LRContext *, ErrInfo *, const Allocator *) {
   return nullptr;
 }
 

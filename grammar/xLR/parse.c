@@ -72,6 +72,7 @@ GrammarEntry *parse(Tokenizer *tokenizer, LRContext *context, ErrInfo *errInfo, 
       token.length = token.end.offset - token.start.offset;
       token.value = func(args, context, errInfo, allocator);
       if (!token.value) {
+        errInfo->state = state;
         return failed_to_produce(state_stack, token_stack, args, act->count, allocator);
       }
       state = parseJumpState(state, act->type);

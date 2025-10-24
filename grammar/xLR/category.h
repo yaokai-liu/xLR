@@ -33,7 +33,7 @@
 #include "array.h"
 #include "xLR/extfloat.h"
 
-enum XLR_TYPE_CATEGORY_ENUM {
+enum XLR_TYPE_CATEGORY_ENUM: uint32_t {
   XLR_CATEGORY_BUILTIN,
   XLR_CATEGORY_STRUCT,
   XLR_CATEGORY_UNION,
@@ -47,19 +47,23 @@ typedef struct {
 } Identifier;
 
 typedef struct LRType {
-  uint32_t      type;
-  // if type
-  // is XLR_CATEGORY_ARRAY:    count of elements
-  // otherwise:                size of the type
+  uint32_t      cat;
+  /*
+   * if cat
+   * is XLR_CATEGORY_ARRAY:    count of elements
+   * otherwise:                size of the type
+   */
   uint32_t      size;
-  // name of type
+  // name of the type
   REFER(Identifier) ident;
-  // if type
-  // is XLR_CATEGORY_BUILTIN:     nullptr
-  // is XLR_CATEGORY_STRUCT:      Array<LRVariable>
-  // is XLR_CATEGORY_UNION:       Array<LRVariable>
-  // is XLR_CATEGORY_ENUM:        Array<EnumItem>
-  // is XLR_CATEGORY_ARRAY:       REFER(LRType)
+  /*
+   * if cat
+   * is XLR_CATEGORY_ENUM:        Array<EnumItem>
+   * is XLR_CATEGORY_ARRAY:       REFER(LRType)
+   * is XLR_CATEGORY_UNION:       Array<LRVariable>
+   * is XLR_CATEGORY_STRUCT:      Array<LRVariable>
+   * is XLR_CATEGORY_BUILTIN:     nullptr
+   */
   void *        refer;
   Array *       attrs;  // Array<LRAttribute>
 } LRType;
@@ -83,11 +87,28 @@ typedef struct LRValue {
   } val;
 } LRValue;
 
+typedef struct LRVariable LRVariable;
 typedef struct LRVariable {
   // type of variable
   REFER(LRType) type;
   REFER(Identifier) ident;
+  /*
+   * if is a field or element of another variable, then
+   *    refers to the parent variable;
+   * else
+   *    set as nullptr.
+   */
+  REFER(LRVariable) parent;
   Array * attrs;  // Array<LRAttribute>
+  /*
+   * if type.cat
+   * is XLR_CATEGORY_BUILTIN:     nullptr
+   * is XLR_CATEGORY_STRUCT:      AVLTree<Identifier, REFER(LRVariable)>
+   * is XLR_CATEGORY_UNION:       AVLTree<Identifier, REFER(LRVariable)>
+   * is XLR_CATEGORY_ENUM:        REFER(LRVariable<EnumItem>)
+   * is XLR_CATEGORY_ARRAY:       Array<REFER(LRVariable)>
+   */
+  void *        refer;
 } LRVariable;
 
 typedef struct LRArgument {

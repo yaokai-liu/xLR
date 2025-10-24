@@ -35,6 +35,7 @@
 #include <string.h>
 #include "builtin.h"
 #include "enum.h"
+#include "meman-utils.h"
 
 #define Array_foreach(type, _array, doing)              \
   do {                                                  \
@@ -287,11 +288,11 @@ LRState_set_reduce_action(LRContext *context, LRState *state, uint32_t key_info,
     action = Dict_get(state->actions, &key);
   }
   if (action->acttype != ACTTYPE_REDUCE) {
-    context->error = XLR_ERROR_RS_CONFLICT;
+    context->error = XLR_ERROR_REDUCE_STACK_CONFLICT;
     return nullptr;
   }
   if (action->index != item->rule) {
-    context->error = XLR_ERROR_RR_CONFLICT;
+    context->error = XLR_ERROR_REDUCE_REDUCE_CONFLICT;
     return nullptr;
   }
   Record_set_rule(action->rules, &item->rule, enable);
@@ -311,7 +312,7 @@ LRState_set_stack_action(LRContext *context, LRState *state, uint32_t key_info, 
     Dict_set(state->actions, &key, &new_action);
     action = Dict_get(state->actions, &key);
   } else if (action->acttype != ACTTYPE_STACK) {
-    context->error = XLR_ERROR_SR_CONFLICT;
+    context->error = XLR_ERROR_STACK_REDUCE_CONFLICT;
     return nullptr;
   }
   Record_set_rule(action->rules, &i_rule, enable);
@@ -322,7 +323,7 @@ LRContext *LRContext_new(const Allocator *allocator) {
   LRContext *context = allocator->calloc(1, sizeof(LRContext));
   context->allocator = allocator;
   context->name_array = Array_new(sizeof(char_t), XLR_OBJECT_NAME, allocator);
-  context->ident_trie = Trie_new(sizeof(char_t), (fn_key_t *) char2u64, allocator);
+  context->ident_trie = Trie_new(sizeof(char_t), (key_t *) char2u64, allocator);
   context->ident_array = Array_new(sizeof(Identifier), XLR_OBJECT_IDENT, allocator);
   context->plain_array = Array_new(sizeof(uint64_t), XLR_OBJECT_PLAIN, allocator);
   context->plain_tree = AVLTree_new(allocator, nullptr);
@@ -339,7 +340,7 @@ LRContext *LRContext_new(const Allocator *allocator) {
   context->text_array = Array_new(sizeof(char_t), XLR_OBJECT_TEXT, allocator);
   context->block_array = Array_new(sizeof(ActionBlock), XLR_OBJECT_BLOCK, allocator);
   context->state_array = Array_new(sizeof(LRState), XLR_OBJECT_STATE, allocator);
-  context->expr_trie = Trie_new(sizeof(REFER(void)), (fn_key_t *)refer2u64, allocator);
+  context->expr_trie = Trie_new(sizeof(REFER(void)), (key_t *)refer2u64, allocator);
   context->in_pattern = false;
 
   LRContext_init(context);
@@ -364,7 +365,7 @@ void LRContext_init(LRContext *context) {
       Trie_set(context->ident_trie, name, v_ident);
     }
     LRType type = {
-      .type = builtin_type->type, .size = builtin_type->size,
+      .cat = builtin_type->cat, .size = builtin_type->size,
       .ident = v_ident, .refer = builtin_type->refer
     };
     Array_append(context->type_array, &type, 1);
@@ -568,7 +569,7 @@ inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain
 }
 
 
-#define IN_RULE(a) XLR_state_Type_AttrList_IDENTIFIER_##a
+#define IN_RULE(a) XLR_state_Type_AttrList_RULE_IDENTIFIER_##a
 #define IN_ACTION_BLOCK(a) XLR_state_AttrList_ATTRIBUTE_IDENTIFIER_LEFT_BRACKET_##a
 #define IN_STATEMENT(a) IN_ACTION_BLOCK(IF_IfCondition_##a)
 

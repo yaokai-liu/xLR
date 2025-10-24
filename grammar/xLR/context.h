@@ -112,10 +112,7 @@ typedef struct LRState {
   statype  type;
   uint32_t index;
   uint32_t count;
-  /*
-   * Dict<LRActKeyPair, LRAction>
-   */
-  Dict *actions;
+  Dict *actions; // Dict<LRActKeyPair, LRAction>
 } LRState;
 
 typedef struct LRSymbol {
@@ -124,6 +121,10 @@ typedef struct LRSymbol {
    * offset in sym_array.
    */
   uint32_t index;
+  /*
+   * the type the symbol corresponds
+   */
+  REFER(LRType) target;
   /*
    * if symtype
    * is SYMTYPE_NON_TERMINAL:   Array<LRRulePair>;
@@ -143,10 +144,6 @@ typedef struct LRSymbol {
    * otherwise:                 nullptr.
    */
   Dict *envs;
-  /*
-   * attributes defined by TypeDefinition
-   */
-  Array *attr_array; // Array<LRVariable>
 } LRSymbol, LRTerminal;
 
 typedef struct LRRule {
@@ -205,12 +202,12 @@ uint64_t LRActKeyPair_hash(const LRActKeyPair *pair);
 #define LRRule_new_items() Array_new(sizeof(INDEX(LRSymbol)), XLR_OBJECT_SYMBOL, context->allocator)
 
 #define LRSymbol_new_rules() Array_new(sizeof(LRRulePair), XLR_OBJECT_RULE, allocator)
-#define LRSymbol_new_envs() Dict_new(sizeof(LREnvPair), sizeof_set, (unikey_t *) LREnvPair_hash, \
+#define LRSymbol_new_envs() Dict_new(sizeof(LREnvPair), sizeof_set, (key_t *) LREnvPair_hash, \
   XLR_OBJECT_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)
 #define LRSymbol_new_firsts() Dict_new(sizeof(INDEX(LRTerminal)), sizeof_set, nullptr, \
   XLR_OBJECT_SYMBOL, nullptr, (destruct_t *) LRRuleSet_release, allocator)
 
-#define LRState_new_actions() Dict_new(sizeof(LRActKeyPair), sizeof(LRAction), (unikey_t *) LRActKeyPair_hash, \
+#define LRState_new_actions() Dict_new(sizeof(LRActKeyPair), sizeof(LRAction), (key_t *) LRActKeyPair_hash, \
   XLR_OBJECT_ACT_KEY, nullptr, (destruct_t *) LRAction_release, context->allocator)
 #define LRContext_new_ruleset() Set_new(sizeof(INDEX(LRRule)), \
   XLR_OBJECT_RULE_KEY, nullptr, (destruct_t *) LRRuleSet_release, context->allocator)

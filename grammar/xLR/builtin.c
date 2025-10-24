@@ -30,24 +30,24 @@
 
 const LRType BUILTIN_TYPES[BUILTIN_TYPE_COUNT] = {
     // basic types
-    [XLR_BUILTIN_TYPE_I32 ] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x04, .ident = (Identifier *) "i32",    .refer = nullptr},
-    [XLR_BUILTIN_TYPE_U32 ] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x04, .ident = (Identifier *) "u32",    .refer = nullptr},
-    [XLR_BUILTIN_TYPE_I64 ] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x08, .ident = (Identifier *) "i64",    .refer = nullptr},
-    [XLR_BUILTIN_TYPE_U64 ] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x08, .ident = (Identifier *) "u64",    .refer = nullptr},
-    [XLR_BUILTIN_TYPE_I128] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x10, .ident = (Identifier *) "i128",   .refer = nullptr},
-    [XLR_BUILTIN_TYPE_U128] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x10, .ident = (Identifier *) "u128",   .refer = nullptr},
-    [XLR_BUILTIN_TYPE_I256] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x20, .ident = (Identifier *) "i256",   .refer = nullptr},
-    [XLR_BUILTIN_TYPE_U256] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x20, .ident = (Identifier *) "u256",   .refer = nullptr},
-    [XLR_BUILTIN_TYPE_F32 ] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x04, .ident = (Identifier *) "f32",    .refer = nullptr},
-    [XLR_BUILTIN_TYPE_F64 ] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x08, .ident = (Identifier *) "f64",    .refer = nullptr},
-    [XLR_BUILTIN_TYPE_F128] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x10, .ident = (Identifier *) "f128",   .refer = nullptr},
-    [XLR_BUILTIN_TYPE_F256] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x20, .ident = (Identifier *) "f256",   .refer = nullptr},
-    [XLR_BUILTIN_TYPE_STR ] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x00, .ident = (Identifier *) "string", .refer = nullptr},
+    [XLR_BUILTIN_TYPE_I32 ] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x04, .ident = (Identifier *) "i32",    .refer = nullptr},
+    [XLR_BUILTIN_TYPE_U32 ] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x04, .ident = (Identifier *) "u32",    .refer = nullptr},
+    [XLR_BUILTIN_TYPE_I64 ] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x08, .ident = (Identifier *) "i64",    .refer = nullptr},
+    [XLR_BUILTIN_TYPE_U64 ] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x08, .ident = (Identifier *) "u64",    .refer = nullptr},
+    [XLR_BUILTIN_TYPE_I128] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x10, .ident = (Identifier *) "i128",   .refer = nullptr},
+    [XLR_BUILTIN_TYPE_U128] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x10, .ident = (Identifier *) "u128",   .refer = nullptr},
+    [XLR_BUILTIN_TYPE_I256] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x20, .ident = (Identifier *) "i256",   .refer = nullptr},
+    [XLR_BUILTIN_TYPE_U256] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x20, .ident = (Identifier *) "u256",   .refer = nullptr},
+    [XLR_BUILTIN_TYPE_F32 ] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x04, .ident = (Identifier *) "f32",    .refer = nullptr},
+    [XLR_BUILTIN_TYPE_F64 ] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x08, .ident = (Identifier *) "f64",    .refer = nullptr},
+    [XLR_BUILTIN_TYPE_F128] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x10, .ident = (Identifier *) "f128",   .refer = nullptr},
+    [XLR_BUILTIN_TYPE_F256] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x20, .ident = (Identifier *) "f256",   .refer = nullptr},
+    [XLR_BUILTIN_TYPE_STR ] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x00, .ident = (Identifier *) "string", .refer = nullptr},
 
     // hidden types
-    [XLR_BUILTIN_TYPE_TOKEN   ] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x00, .ident = (Identifier *) "__BUILTIN__::TOKEN",    .refer = nullptr},
-    [XLR_BUILTIN_TYPE_TOKENS  ] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x00, .ident = (Identifier *) "__BUILTIN__::TOKENS",   .refer = nullptr},
-    [XLR_BUILTIN_TYPE_COMPILER] = {.type = XLR_CATEGORY_BUILTIN, .size = 0x00, .ident = (Identifier *) "__BUILTIN__::COMPILER", .refer = nullptr},
+    [XLR_BUILTIN_TYPE_TOKEN   ] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x00, .ident = (Identifier *) "__BUILTIN__::TOKEN",    .refer = nullptr},
+    [XLR_BUILTIN_TYPE_TOKENS  ] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x00, .ident = (Identifier *) "__BUILTIN__::TOKENS",   .refer = nullptr},
+    [XLR_BUILTIN_TYPE_COMPILER] = {.cat = XLR_CATEGORY_BUILTIN, .size = 0x00, .ident = (Identifier *) "__BUILTIN__::COMPILER", .refer = nullptr},
 };
 
 const LRVariable BUILTIN_VARS[BUILTIN_VAR_COUNT] = {
