@@ -392,7 +392,7 @@ void LRContext_init(LRContext *context) {
     REFER(LRVariable) v_var = Array_last_virt(context->var_array);
     AVLTree_set(context->var_tree, (uint64_t) v_ident, v_var);
   }
-  // Builtin Variables
+  // Builtin Functions
   for (uint32_t i = 0; i < BUILTIN_FUNC_COUNT; i ++) {
     const LRFunction *builtin_func = &BUILTIN_FUNCS[i];
     const char_t *name = (char_t *) builtin_func->ident;
@@ -533,12 +533,12 @@ LRValue * LRContext_eval(LRContext *, ErrInfo *, Expr *) {
 }
 
 LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident) {
-  REFER(LRVariable) v_var = nullptr;
+  const REFER(LRVariable) v_var = nullptr;
   const ActionBlock *curr_block = context->curr_block;
   while (curr_block) {
-    curr_block = Array_virt2real(context->block_array, curr_block);
     v_var = AVLTree_get(curr_block->var_tree, (uint64_t) v_ident);
-    if (v_var) { break; } else { curr_block = curr_block->parent; }
+    curr_block = Array_virt2real(context->block_array, curr_block->parent);
+    if (v_var) { break; }
   }
   if (!curr_block) { return nullptr; }
   return Array_virt2real(curr_block->var_array, v_var);
@@ -571,7 +571,6 @@ inline REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain
 
 #define IN_RULE(a) XLR_state_Type_AttrList_RULE_IDENTIFIER_##a
 #define IN_ACTION_BLOCK(a) XLR_state_AttrList_ATTRIBUTE_IDENTIFIER_LEFT_BRACKET_##a
-#define IN_STATEMENT(a) IN_ACTION_BLOCK(IF_IfCondition_##a)
 
 void LRContext_state_action(LRContext *context, uint32_t state, Token *, const Allocator *allocator) {
   switch (state) {
@@ -583,24 +582,23 @@ void LRContext_state_action(LRContext *context, uint32_t state, Token *, const A
     }
     case XLR_state_AttrList_ATTRIBUTE_IDENTIFIER_LEFT_BRACKET:
     case IN_RULE(LEFT_PARENTHESIS_Pattern_RIGHT_PARENTHESIS_LEFT_BRACKET): {
-      ActionBlock *block = ActionBlock_new(allocator);
+      const ActionBlock *block = ActionBlock_new(allocator);
       Array_append(context->block_array, block, 1);
-      context->curr_block = Array_last_virt(context->block_array);
+      context->curr_block = Array_last_real(context->block_array);
       context->kw_as_ident = XLR_KW_AS_IDENT;
       return;
     }
-    case IN_STATEMENT(LEFT_BRACKET):
-    case IN_ACTION_BLOCK(LEFT_BRACKET): {
+    case IN_ACTION_BLOCK(LEFT_BRACKET):
+    case IN_ACTION_BLOCK(IF_IfCondition_LEFT_BRACKET): {
       ActionBlock *block = ActionBlock_new(allocator);
-      block->parent = context->curr_block;
+      block->parent = Array_real2virt(context->block_array, context->curr_block);
       Array_append(context->block_array, block, 1);
-      context->curr_block = Array_last_virt(context->block_array);
+      context->curr_block = Array_last_real(context->block_array);
       return;
     }
-    case IN_STATEMENT(ActionBlock):
-    case IN_ACTION_BLOCK(ActionBlock): {
-      const ActionBlock *block = Array_virt2real(context->block_array, context->curr_block);
-      context->curr_block = block->parent;
+    case IN_ACTION_BLOCK(ActionBlock):
+    case IN_ACTION_BLOCK(IF_IfCondition_ActionBlock): {
+      context->curr_block = Array_virt2real(context->block_array, context->curr_block->parent);
       return;
     }
     case XLR_state_AttrList_ATTRIBUTE_IDENTIFIER_ActionBlock:

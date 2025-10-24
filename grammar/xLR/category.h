@@ -60,8 +60,8 @@ typedef struct LRType {
    * if cat
    * is XLR_CATEGORY_ENUM:        Array<EnumItem>
    * is XLR_CATEGORY_ARRAY:       REFER(LRType)
-   * is XLR_CATEGORY_UNION:       Array<LRVariable>
-   * is XLR_CATEGORY_STRUCT:      Array<LRVariable>
+   * is XLR_CATEGORY_UNION:       AVLTree<Identifier, LRVariable>
+   * is XLR_CATEGORY_STRUCT:      AVLTree<Identifier, LRVariable>
    * is XLR_CATEGORY_BUILTIN:     nullptr
    */
   void *        refer;
@@ -91,7 +91,6 @@ typedef struct LRVariable LRVariable;
 typedef struct LRVariable {
   // type of variable
   REFER(LRType) type;
-  REFER(Identifier) ident;
   /*
    * if is a field or element of another variable, then
    *    refers to the parent variable;
@@ -99,7 +98,14 @@ typedef struct LRVariable {
    *    set as nullptr.
    */
   REFER(LRVariable) parent;
-  Array * attrs;  // Array<LRAttribute>
+  /*
+   * if parent.type.cat
+   * is XLR_CATEGORY_STRUCT:      Identifier  -- field in the struct
+   * is XLR_CATEGORY_UNION:       Identifier  -- field in the union
+   * is XLR_CATEGORY_ARRAY:       LRVariable  -- index in the array
+   * is nullptr:                  Identifier  -- the name of the variable
+   */
+  REFER(Identifier) ident;
   /*
    * if type.cat
    * is XLR_CATEGORY_BUILTIN:     nullptr
@@ -109,6 +115,7 @@ typedef struct LRVariable {
    * is XLR_CATEGORY_ARRAY:       Array<REFER(LRVariable)>
    */
   void *        refer;
+  Array *       attrs;  // Array<LRAttribute>
 } LRVariable;
 
 typedef struct LRArgument {

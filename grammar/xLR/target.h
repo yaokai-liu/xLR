@@ -65,7 +65,7 @@ typedef struct AttrDefinition {
 typedef LRRule RuleDefinition;
 typedef LRFunction FuncDefinition;
 
-typedef LRVariable Expression;
+typedef LRVariable Expression; // virtual variable
 
 typedef Expression Expr, CondExpr, CompExpr;
 typedef Expression ArithExpr, Arith_0_Expr, Arith_1_Expr, Arith_2_Expr, Arith_3_Expr, Arith_4_Expr;

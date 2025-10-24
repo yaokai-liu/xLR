@@ -56,9 +56,10 @@ const LRVariable BUILTIN_VARS[BUILTIN_VAR_COUNT] = {
 };
 
 const LRFunction BUILTIN_FUNCS[BUILTIN_FUNC_COUNT] = {
-    [XLR_BUILTIN_FUNC_ACCESS]         = {.ident = (Identifier *) "__BUILTIN__::ACCESS",        .restype = nullptr, .params = nullptr},
-    [XLR_BUILTIN_FUNC_ATTRIBUTE]      = {.ident = (Identifier *) "__BUILTIN__::ATTRIBUTE",     .restype = nullptr, .params = nullptr},
-    [XLR_BUILTIN_FUNC_SUBSCRIBE]      = {.ident = (Identifier *) "__BUILTIN__::SUBSCRIBE",     .restype = nullptr, .params = nullptr},
+    [XLR_BUILTIN_FUNC_ATTRS_GET]      = {.ident = (Identifier *) "__BUILTIN__::ATTRS_GET",     .restype = nullptr, .params = nullptr},
+    [XLR_BUILTIN_FUNC_ATTRS_SET]      = {.ident = (Identifier *) "__BUILTIN__::ATTRS_SET",     .restype = nullptr, .params = nullptr},
+    [XLR_BUILTIN_FUNC_ARRAY_GET]      = {.ident = (Identifier *) "__BUILTIN__::ARRAY_GET",     .restype = nullptr, .params = nullptr},
+    [XLR_BUILTIN_FUNC_ARRAY_SET]      = {.ident = (Identifier *) "__BUILTIN__::ARRAY_SET",     .restype = nullptr, .params = nullptr},
     [XLR_BUILTIN_FUNC_INTEGRATE_INC]  = {.ident = (Identifier *) "__BUILTIN__::INTEGRATE_INC", .restype = nullptr, .params = nullptr},
     [XLR_BUILTIN_FUNC_INTEGRATE_DEC]  = {.ident = (Identifier *) "__BUILTIN__::INTEGRATE_DEC", .restype = nullptr, .params = nullptr},
     [XLR_BUILTIN_FUNC_ARITH_BIN_ADD]  = {.ident = (Identifier *) "__BUILTIN__::ARITH_BIN_ADD", .restype = nullptr, .params = nullptr},

@@ -182,7 +182,7 @@ typedef struct LRContext {
   AVLTree *func_tree;   // AVLTree<REFER(char_t), REFER(LRFunction)>
   Array *func_array;    // Array<LRFunction>
   Trie *expr_trie;      // Trie<REFER(_any_), REFER(LRVariable)>
-  REFER(ActionBlock) curr_block;
+  ActionBlock *curr_block;
   INDEX(LRState) state;
   bool     in_pattern;
   uint64_t kw_as_ident; // bits for keywords to tokenize as identifiers

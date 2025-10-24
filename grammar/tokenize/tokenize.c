@@ -703,6 +703,10 @@ uint32_t tokenize_symbol_NOT(const char_t *input, Terminal *result, const Alloca
     result->type = XLR_TOKEN_COMPARE_OP;
     result->value = (void *) (uint64_t) XLR_BUILTIN_FUNC_COMPARE_NE;
     result->length = 2;
+  } else if (*pText == '.') {
+    result->type = XLR_TOKEN_GET;
+    result->value = nullptr;
+    result->length = 2;
   } else {
     result->type = XLR_TOKEN_COND_SIN_OP;
     result->value = (void *) (uint64_t) XLR_BUILTIN_FUNC_BOOL_SIN_NOT;
@@ -772,7 +776,6 @@ uint32_t tokenize_arith_single_symbols(const char_t * const input, Terminal * co
   return 0;
 }
 constexpr uint32_t ACTION_TERMINAL_TYPE_LITERALS[] = {
-  XLR_TOKEN_AT,
   XLR_TOKEN_DOT,
   XLR_TOKEN_COMMA,
   XLR_TOKEN_SEMICOLON,
@@ -786,7 +789,7 @@ constexpr uint32_t ACTION_TERMINAL_TYPE_LITERALS[] = {
   XLR_TOKEN_RIGHT_PARENTHESIS,
 };
 uint32_t tokenize_action_single_symbol(const char_t * const input, Terminal * const result, const Allocator * const) {
-  constexpr char_t ACTION_SINGLE_LITERAL[] = "@.,;?{}[]()";
+  constexpr char_t ACTION_SINGLE_LITERAL[] = ".,;?{}[]()";
   uint32_t length = stridx_o(*input, ACTION_SINGLE_LITERAL);
   if (length < lenof(ACTION_SINGLE_LITERAL)) {
     result->type = ACTION_TERMINAL_TYPE_LITERALS[length];

@@ -82,130 +82,212 @@ Accessed * XLR_Accessed_0 (Token args[], LRContext *context, ErrInfo *errInfo, c
 }
 
 ActionBlock * XLR_ActionBlock_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (ActionBlock *) (uint64_t) XLR_TOKEN_ActionBlock;
 }
 
 ActionBlock * XLR_ActionBlock_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (ActionBlock *) (uint64_t) XLR_TOKEN_ActionBlock;
 }
 
 ActionStatement * XLR_ActionStatement_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (ActionStatement *) (uint64_t) XLR_TOKEN_ActionStatement;
 }
 
 ActionStatement * XLR_ActionStatement_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (ActionStatement *) (uint64_t) XLR_TOKEN_ActionStatement;
 }
 
 ActionStatement * XLR_ActionStatement_2 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (ActionStatement *) (uint64_t) XLR_TOKEN_ActionStatement;
 }
 
 ActionStatement * XLR_ActionStatement_3 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (ActionStatement *) (uint64_t) XLR_TOKEN_ActionStatement;
 }
 
 ActionStatements * XLR_ActionStatements_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (ActionStatements *) (uint64_t) XLR_TOKEN_ActionStatements;
 }
 
 ActionStatements * XLR_ActionStatements_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (ActionStatements *) (uint64_t) XLR_TOKEN_ActionStatements;
 }
 
 Argument * XLR_Argument_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (Argument *) (uint64_t) XLR_TOKEN_Argument;
 }
 
 Argument * XLR_Argument_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+  return (Argument *) (uint64_t) XLR_TOKEN_Argument;
 }
 
-Arguments * XLR_Arguments_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arguments * XLR_Arguments_0 (Token args[], LRContext *, ErrInfo *, const Allocator *){
+  Arguments *arguments = args[0].value;
+  Argument  *argument  = args[2].value;
+
+  Array_append(arguments, argument, 1);
+
+  return arguments;
 }
 
-Arguments * XLR_Arguments_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arguments * XLR_Arguments_1 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator){
+  const Argument  *argument  = args[0].value;
+
+  Arguments *arguments = Array_new(sizeof(Argument), XLR_OBJECT_VAR, allocator);
+  Array_append(arguments, argument, 1);
+
+  return arguments;
 }
 
-Arguments * XLR_Arguments_2 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arguments * XLR_Arguments_2 (Token [], LRContext *, ErrInfo *, const Allocator *allocator){
+  return Array_new(sizeof(Argument), XLR_OBJECT_VAR, allocator);;
 }
 
-ArithExpr * XLR_ArithExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+ArithExpr * XLR_ArithExpr_0 (Token args[], LRContext *, ErrInfo *, const Allocator *){
+  return args[0].value;
 }
 
-ArithExpr * XLR_ArithExpr_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+ArithExpr * XLR_ArithExpr_1 (Token args[], LRContext *, ErrInfo *, const Allocator *){
+  return args[0].value;
 }
 
-ArithExpr * XLR_ArithExpr_2 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+ArithExpr * XLR_ArithExpr_2 (Token args[], LRContext *, ErrInfo *, const Allocator *){
+  return args[1].value;
 }
 
-Arith_0_Expr * XLR_Arith_0_Expr_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_0_Expr * XLR_Arith_0_Expr_0 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *){
+  const Arith_0_Expr *v_lhs = args[0].value;
+  const uint32_t builtin_func = (uint64_t) args[1].value;
+  const Arith_0_Expr *v_rhs = args[2].value;
+
+  const Arith_0_Expr *lhs = Array_virt2real(context->var_array, v_lhs);
+  const Arith_0_Expr *rhs = Array_virt2real(context->var_array, v_rhs);
+
+  if (lhs->type != rhs->type) {
+    errInfo->code = XLR_ERROR_TYPE_MISMATCH;
+    errInfo->start = args[0].start;
+    errInfo->end = args[2].end;
+    return nullptr;
+  }
+
+  // TODO: generate instruction for the builtin operator, and the result's attributes and value.
+
+  const LRVariable res = { .type = nullptr, .ident = nullptr, .parent = nullptr, .attrs = nullptr, .refer = nullptr };
+  Array_append(context->var_array, &res, 1);
+
+  return Array_last_virt(context->var_array);
 }
 
-Arith_0_Expr * XLR_Arith_0_Expr_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_0_Expr * XLR_Arith_0_Expr_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *){
+  const uint32_t builtin_func = (uint64_t) args[0].value;
+  const Arith_0_Expr *v_rhs = args[1].value;
+
+  const Arith_0_Expr *rhs = Array_virt2real(context->var_array, v_rhs);
+
+  // TODO: generate instruction for the builtin operator, and the result's attributes and value.
+
+  const LRVariable res = { .type = rhs->type, .ident = nullptr, .parent = nullptr, .attrs = nullptr, .refer = nullptr };
+  Array_append(context->var_array, &res, 1);
+
+  return Array_last_virt(context->var_array);
 }
 
-Arith_0_Expr * XLR_Arith_0_Expr_2 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_0_Expr * XLR_Arith_0_Expr_2 (Token args[], LRContext *, ErrInfo *, const Allocator *){
+  return args[0].value;
 }
 
-Arith_1_Expr * XLR_Arith_1_Expr_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_1_Expr * XLR_Arith_1_Expr_0 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator){
+  return XLR_Arith_0_Expr_0(args, context, errInfo, allocator);
 }
 
-Arith_1_Expr * XLR_Arith_1_Expr_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_1_Expr * XLR_Arith_1_Expr_1 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator){
+  return XLR_Arith_0_Expr_1(args, context, errInfo, allocator);
 }
 
-Arith_1_Expr * XLR_Arith_1_Expr_2 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_1_Expr * XLR_Arith_1_Expr_2 (Token args[], LRContext *, ErrInfo *, const Allocator *){
+  return args[0].value;
 }
 
-Arith_2_Expr * XLR_Arith_2_Expr_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_2_Expr * XLR_Arith_2_Expr_0 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator){
+  return XLR_Arith_0_Expr_0(args, context, errInfo, allocator);
 }
 
-Arith_2_Expr * XLR_Arith_2_Expr_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_2_Expr * XLR_Arith_2_Expr_1 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator){
+  return XLR_Arith_0_Expr_1(args, context, errInfo, allocator);
 }
 
-Arith_2_Expr * XLR_Arith_2_Expr_2 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_2_Expr * XLR_Arith_2_Expr_2 (Token args[], LRContext *, ErrInfo *, const Allocator *){
+  return args[0].value;
 }
 
-Arith_3_Expr * XLR_Arith_3_Expr_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_3_Expr * XLR_Arith_3_Expr_0 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator){
+  return XLR_Arith_0_Expr_0(args, context, errInfo, allocator);
 }
 
-Arith_3_Expr * XLR_Arith_3_Expr_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_3_Expr * XLR_Arith_3_Expr_1 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator){
+  return XLR_Arith_0_Expr_1(args, context, errInfo, allocator);
 }
 
-Arith_3_Expr * XLR_Arith_3_Expr_2 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_3_Expr * XLR_Arith_3_Expr_2 (Token args[], LRContext *, ErrInfo *, const Allocator *){
+  return args[0].value;
 }
 
-Arith_4_Expr * XLR_Arith_4_Expr_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_4_Expr * XLR_Arith_4_Expr_0 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *allocator){
+  return XLR_Arith_0_Expr_1(args, context, errInfo, allocator);
 }
 
-Arith_4_Expr * XLR_Arith_4_Expr_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
-  return nullptr;
+Arith_4_Expr * XLR_Arith_4_Expr_1 (Token args[], LRContext *, ErrInfo *, const Allocator *){
+  return args[0].value;
 }
 
 AssignExpr * XLR_AssignExpr_0 (Token [], LRContext *, ErrInfo *, const Allocator *){
   return nullptr;
 }
 
-AssignExpr * XLR_AssignExpr_1 (Token [], LRContext *, ErrInfo *, const Allocator *){
+AssignExpr * XLR_AssignExpr_1 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *){
+  const REFER(Assignable) v_assignable = args[0].value;
+  REFER(ArithExpr) v_expr = args[2].value;
+
+  const ArithExpr *expr = Array_virt2real(context->var_array, v_expr);
+  const Assignable *assignable = Array_virt2real(context->var_array, v_assignable);
+  const LRVariable *parent = Array_virt2real(context->var_array, assignable->parent);
+  if (!parent) {
+    const REFER(LRVariable) var = LRContext_get_variable(context, assignable->ident);
+    if (!var) {
+      errInfo->code = XLR_ERROR_NO_SUCH_VARIABLE;
+      errInfo->start = args[0].start;
+      errInfo->end = args[0].end;
+      return nullptr;
+    }
+    if (expr->type != var->type) {
+      errInfo->code = XLR_ERROR_TYPE_MISMATCH;
+      errInfo->start = args[0].start;
+      errInfo->end = args[2].end;
+      return nullptr;
+    }
+    AVLTree_set(context->curr_block->var_tree, (uint64_t) assignable->ident, v_expr);
+  } else {
+    const REFER(LRType) parent_type = Array_virt2real(context->type_array, parent->type);
+    switch (parent_type->cat) {
+      case XLR_CATEGORY_UNION:
+      case XLR_CATEGORY_STRUCT: {
+        const LRVariable *field = AVLTree_get(parent_type->refer, (uint64_t) assignable->ident);
+        if (expr->type != field->type) {
+          errInfo->code = XLR_ERROR_TYPE_MISMATCH;
+          errInfo->start = args[0].start;
+          errInfo->end = args[2].end;
+          return nullptr;
+        }
+        AVLTree_set(parent->refer, (uint64_t) assignable->ident, v_expr);
+        break;
+      }
+      case XLR_CATEGORY_ARRAY: {
+        // TODO:
+      }
+      default: ;
+    }
+  }
+
   return nullptr;
 }
 
