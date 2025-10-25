@@ -139,7 +139,7 @@ typedef struct Parameter {
 typedef struct LRFunction {
   REFER(Identifier)   ident;
   REFER(LRType)       restype;
-  Array              *params; // Array<Parameter>
+  Array              *params; // Array<LRParameter>
   Array              *attrs; // Array<LRAttribute>
   Array              *commands; // Array<uint8_t>
 } LRFunction;

@@ -113,11 +113,9 @@ add_library(${TARGET_PREFIX}grammar STATIC ${XLR_GRAMMAR_SRC})
 target_link_libraries(${TARGET_PREFIX}grammar PRIVATE m)
 target_include_directories(${TARGET_PREFIX}grammar PRIVATE grammar)
 
-
 add_executable(${TARGET_PREFIX}debug test/debug.c)
 target_link_libraries(${TARGET_PREFIX}debug PRIVATE ${TARGET_PREFIX}grammar)
 target_include_directories(${TARGET_PREFIX}debug PRIVATE grammar)
-
 
 if (BUILD_XLR_TEST)
     add_compile_definitions("XLR_BUILD_TEST=1")
