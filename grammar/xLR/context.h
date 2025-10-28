@@ -37,6 +37,7 @@
 #include "set.h"
 #include "target.h"
 #include "category.h"
+#include "stack.h"
 
 enum CONTEXT_OBJECT_TYPE_ENUM: uint32_t {
   XLR_OBJECT_NULL,
@@ -166,6 +167,21 @@ typedef struct LRContext {
   Array *name_array;    // Array<char_t>
   Array *ident_array;   // Array<Identifier>
   Trie  *ident_trie;    // Trie<char_t, REFER(Identifier)>
+  /*
+   * AVLTree<REFER(char_t), XLR_OBJECT_TYPE_ENUM>
+   * Only record
+   *    XLR_OBJECT_IDENT, or
+   *    XLR_OBJECT_ENUM, or
+   *    XLR_OBJECT_ATTR, or
+   *    XLR_OBJECT_TYPE, or
+   *    XLR_OBJECT_FUNC.
+   */
+  AVLTree *def_tree;
+  /*
+   * AVLTree<REFER(char_t), REFER(LRVariable)>
+   * only record builtin variables
+   */
+  AVLTree *builtin_var_tree;
   Array *plain_array;   // Array<uint64_t>
   AVLTree *plain_tree;  // AVLTree<uint64_t, REFER(uint64_t)>
   Array *sym_array;     // Array<LRSymbol>
@@ -177,15 +193,22 @@ typedef struct LRContext {
   Array *text_array;    // Array<char_t>
   Array *block_array;   // Array<ActionBlock>
   Array *state_array;   // Array<LRState>
-  AVLTree *var_tree;    // AVLTree<REFER(char_t), REFER(Array<LRVariable>)>
-  Array *var_array;     // Array<Array<LRVariable>>
+  Array *var_array;     // Array<LRVariable>
   AVLTree *func_tree;   // AVLTree<REFER(char_t), REFER(LRFunction)>
   Array *func_array;    // Array<LRFunction>
   Trie *expr_trie;      // Trie<REFER(_any_), REFER(LRVariable)>
-  ActionBlock *curr_block;
-  INDEX(LRState) state;
-  bool     in_pattern;
+
   uint64_t kw_as_ident; // bits for keywords to tokenize as identifiers
+
+  ActionBlock *curr_block;
+
+  INDEX(LRState) state;
+
+  bool     in_pattern;
+
+  Stack *params_stack; // Stack<Array<LRParameter> *>
+  Array *curr_params;  // Array<LRParameter>
+
   uint32_t error;
 } LRContext;
 
@@ -240,7 +263,7 @@ INDEX(LRType) LRContext_typeof(LRContext *context, ErrInfo *errInfo, Expr *expr)
 bool LRContext_subtype(LRContext *context, ErrInfo *errInfo, Expr *expr, LRType);
 LRValue *LRContext_eval(LRContext *context, ErrInfo *errInfo, Expr *expr);
 
-LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident);
+LRVariable *LRContext_get_variable(const LRContext *context, REFER(Identifier) v_ident);
 
 REFER(char_t) LRContent_new_text_content(LRContext *context, const char_t *text, uint32_t size);
 #define LRContent_add_text_content(context, text_content, size) \
@@ -248,11 +271,13 @@ REFER(char_t) LRContent_new_text_content(LRContext *context, const char_t *text,
 
 REFER(LRSymbol) LRContext_plain_to_sym(LRContext *context, uint64_t plain);
 
-#define LRContext_get_var(name)       AVLTree_get(context->var_tree, (uint64_t) Trie_get(context->ident_trie, name))
-#define LRContext_builtin_var(index)  AVLTree_get(context->var_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_VARS[index].ident))
+#define LRContext_get_attr(name)      AVLTree_get(context->attr_tree, (uint64_t) Trie_get(context->ident_trie, name))
+#define LRContext_builtin_attr(index) AVLTree_get(context->attr_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_ATTRS[index].ident))
 #define LRContext_get_type(name)      AVLTree_get(context->type_tree, (uint64_t) Trie_get(context->ident_trie, name))
 #define LRContext_builtin_type(index) AVLTree_get(context->type_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_TYPES[index].ident))
 #define LRContext_get_func(name)      AVLTree_get(context->func_tree, (uint64_t) Trie_get(context->ident_trie, name))
 #define LRContext_builtin_func(index) AVLTree_get(context->func_tree, (uint64_t) Trie_get(context->ident_trie, BUILTIN_FUNCS[index].ident))
+
+#define LRContext_builtin_var(index)  AVLTree_get(context->builtin_var_tree,  (uint64_t) Trie_get(context->ident_trie, BUILTIN_VARS[index].ident))
 
 #endif  // XLR_LR_CONTEXT_H

@@ -324,6 +324,7 @@ LRContext *LRContext_new(const Allocator *allocator) {
   context->allocator = allocator;
   context->name_array = Array_new(sizeof(char_t), XLR_OBJECT_NAME, allocator);
   context->ident_trie = Trie_new(sizeof(char_t), (key_t *) char2u64, allocator);
+  context->def_tree = AVLTree_new(allocator, nullptr);
   context->ident_array = Array_new(sizeof(Identifier), XLR_OBJECT_IDENT, allocator);
   context->plain_array = Array_new(sizeof(uint64_t), XLR_OBJECT_PLAIN, allocator);
   context->plain_tree = AVLTree_new(allocator, nullptr);
@@ -334,7 +335,7 @@ LRContext *LRContext_new(const Allocator *allocator) {
   context->type_array = Array_new(sizeof(LRType), XLR_OBJECT_TYPE, allocator);
   context->type_tree = AVLTree_new(allocator, nullptr);
   context->var_array = Array_new(sizeof(LRVariable), XLR_OBJECT_VAR, allocator);
-  context->var_tree = AVLTree_new(allocator, nullptr);
+  context->builtin_var_tree = AVLTree_new(allocator, nullptr);
   context->func_array = Array_new(sizeof(LRVariable), XLR_OBJECT_FUNC, allocator);
   context->func_tree = AVLTree_new(allocator, nullptr);
   context->text_array = Array_new(sizeof(char_t), XLR_OBJECT_TEXT, allocator);
@@ -390,7 +391,7 @@ void LRContext_init(LRContext *context) {
     LRVariable var = { .type = type, .ident = v_ident };
     Array_append(context->var_array, &var, 1);
     REFER(LRVariable) v_var = Array_last_virt(context->var_array);
-    AVLTree_set(context->var_tree, (uint64_t) v_ident, v_var);
+    AVLTree_set(context->builtin_var_tree, (uint64_t) v_ident, v_var);
   }
   // Builtin Functions
   for (uint32_t i = 0; i < BUILTIN_FUNC_COUNT; i ++) {
@@ -532,7 +533,7 @@ LRValue * LRContext_eval(LRContext *, ErrInfo *, Expr *) {
   return nullptr;
 }
 
-LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident) {
+LRVariable *LRContext_get_variable(const LRContext *context, REFER(Identifier) v_ident) {
   const REFER(LRVariable) v_var = nullptr;
   const ActionBlock *curr_block = context->curr_block;
   while (curr_block) {
@@ -540,8 +541,8 @@ LRVariable *LRContext_get_variable(LRContext *context, REFER(Identifier) v_ident
     curr_block = Array_virt2real(context->block_array, curr_block->parent);
     if (v_var) { break; }
   }
-  if (!curr_block) { return nullptr; }
-  return Array_virt2real(curr_block->var_array, v_var);
+  if (!v_var) { v_var = AVLTree_get(context->builtin_var_tree, (uint64_t) v_ident); }
+  return Array_virt2real(context->var_array, v_var);
 }
 
 inline REFER(char_t) LRContent_new_text_content(LRContext *context, const char_t *text, uint32_t size) {

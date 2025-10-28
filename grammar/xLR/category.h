@@ -124,12 +124,6 @@ typedef struct LRArgument {
   Array * attrs; // Array<LRAttribute>
 } LRArgument;
 
-typedef struct LRAttribute {
-  // name of attribute
-  REFER(Identifier) ident;
-  Array            *args; // Array<Argument>
-} LRAttribute;
-
 typedef struct Parameter {
   REFER(LRType)     type;
   REFER(Identifier) ident;
@@ -138,11 +132,21 @@ typedef struct Parameter {
 
 typedef struct LRFunction {
   REFER(Identifier)   ident;
+  /*
+   * if restype is nullptr means it defines an attribute,
+   * else means it defines a function
+   */
   REFER(LRType)       restype;
   Array              *params; // Array<LRParameter>
   Array              *attrs; // Array<LRAttribute>
   Array              *commands; // Array<uint8_t>
 } LRFunction;
+
+typedef struct LRAttribute {
+  // name of attribute
+  REFER(LRFunction) func;
+  Array            *args; // Array<Argument>
+} LRAttribute;
 
 typedef struct LRSymbol LRSymbol;
 typedef struct LRState LRState;

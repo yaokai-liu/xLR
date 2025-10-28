@@ -58,9 +58,7 @@ typedef Array EnumItems; // Array<EnumItem>
 
 typedef LRType EnumDeclaration, TypeDefinition, Type, TypeRenaming;
 
-typedef struct AttrDefinition {
-
-} AttrDefinition, AttrRenaming;
+typedef LRFunction AttrDefinition, AttrRenaming;
 
 typedef LRRule RuleDefinition;
 typedef LRFunction FuncDefinition;
@@ -79,6 +77,7 @@ typedef LRVariable Variable;
 typedef Array VarList, Declaration, Declarations; // Array<LRVariable>
 typedef Array ArrayInitExprList; // Array<ArithExpr>
 
+typedef LRAttribute Attribute;
 typedef Array AttrList; // Array<LRAttribute>
 
 typedef LRParameter Parameter;
@@ -101,8 +100,7 @@ typedef Array VariableInitializerList;
 typedef struct ActionBlock ActionBlock;
 struct ActionBlock {
   REFER(ActionBlock) parent;
-  AVLTree *var_tree;  // AVLTree<REFER(Identifier), REFER(Array<LRVariable>)>
-  Array   *var_array; // Array<Array<LRVariable>>
+  AVLTree *var_tree;  // AVLTree<REFER(Identifier), REFER(LRVariable)>
   Array   *subblocks;  // Array<INDEX(ActionBlock)>
   Array   *commands;
 };
@@ -127,7 +125,7 @@ typedef struct WrapperedText {
 } WrapperedText;
 
 ActionBlock *ActionBlock_new(const Allocator *allocator);
-#define AttrList_new(allocator) Array_new(sizeof(LRAttribute), XLR_TOKEN_ATTRIBUTE, allocator)
+#define AttrList_new(allocator) Array_new(sizeof(LRAttribute), XLR_OBJECT_ATTR, allocator)
 
 void releaseActionBlock(ActionBlock *, const Allocator *);
 void releaseRuleDefinition(RuleDefinition *, const Allocator *);

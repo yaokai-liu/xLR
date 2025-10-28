@@ -369,40 +369,99 @@ inline Assignable * XLR_Assignable_3 (Token args[], LRContext *, ErrInfo *, cons
   return args[0].value;
 }
 
-inline AttrDefinition * XLR_AttrDefinition_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
+inline AttrDefinition * XLR_AttrDefinition_0 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *) {
+  // AttrList *attrs = args[0].value;
+  Identifier *name = args[2].value;
+  // Parameters *params = args[4].value;
+  // ActionBlock *action = args[6].value;
+
+  const uint32_t def_type = (uint64_t) AVLTree_get(context->def_tree, (uint64_t) name);
+  if (def_type) {
+    errInfo->code = XLR_ERROR_MULTI_DEFINITION;
+    errInfo->start = args[0].start;
+    errInfo->end = args[6].end;
+    return nullptr;
+  }
+  // TODO:
   return nullptr;
 }
 
-inline AttrDefinition * XLR_AttrDefinition_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
+inline AttrDefinition * XLR_AttrDefinition_1 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *) {
+  // AttrList *attrs = args[0].value;
+  Identifier *name = args[2].value;
+  // ActionBlock *action = args[3].value;
+
+  const uint32_t def_type = (uint64_t) AVLTree_get(context->def_tree, (uint64_t) name);
+  if (def_type) {
+    errInfo->code = XLR_ERROR_MULTI_DEFINITION;
+    errInfo->start = args[0].start;
+    errInfo->end = args[6].end;
+    return nullptr;
+  }
+  // TODO:
   return nullptr;
 }
 
-inline AttrList * XLR_AttrList_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
+inline AttrList * XLR_AttrList_0 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  AttrList *attrs = args[0].value;
+  Attribute *attr = args[1].value;
+
+  Array_append(attrs, attr, 1);
+  allocator->free(attr);
+
+  return attrs;
+}
+
+inline AttrList * XLR_AttrList_1 (Token args[], LRContext *, ErrInfo *, const Allocator *allocator) {
+  Attribute *attr = args[1].value;
+
+  AttrList *attrs = AttrList_new(allocator);
+  Array_append(attrs, attr, 1);
+  allocator->free(attr);
+
+  return attrs;
+}
+
+inline AttrList * XLR_AttrList_2 (Token [], LRContext *, ErrInfo *, const Allocator *allocator) {
+  return AttrList_new(allocator);
+}
+
+inline AttrRenaming * XLR_AttrRenaming_0 (Token args[], LRContext *context, ErrInfo *errInfo, const Allocator *) {
+  // AttrList *attrs = args[1].value;
+  // Attribute *attr = args[2].value;
+  Identifier *name = args[3].value;
+
+  const uint32_t def_type = (uint64_t) AVLTree_get(context->def_tree, (uint64_t) name);
+  if (def_type) {
+    errInfo->code = XLR_ERROR_MULTI_DEFINITION;
+    errInfo->start = args[0].start;
+    errInfo->end = args[6].end;
+    return nullptr;
+  }
+  // TODO:
   return nullptr;
 }
 
-inline AttrList * XLR_AttrList_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+inline Attribute * XLR_Attribute_0 (Token args[], LRContext *context, ErrInfo *, const Allocator *allocator) {
+  Identifier *name = args[1].value;
+  Arguments *arguments = args[3].value;
+
+
+  Attribute *attr = allocator->calloc(1, sizeof(Attribute));
+  attr->func = LRContext_get_func(name);
+  attr->args = arguments;
+
+  return attr;
 }
 
-inline AttrList * XLR_AttrList_2 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
-}
+inline Attribute * XLR_Attribute_1 (Token args[], LRContext *context, ErrInfo *, const Allocator *allocator) {
+  Identifier *name = args[1].value;
 
-inline AttrList * XLR_AttrList_3 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
-}
+  Attribute *attr = allocator->calloc(1, sizeof(Attribute));
+  attr->func = LRContext_get_func(name);
+  attr->args = nullptr;
 
-inline AttrList * XLR_AttrList_4 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
-}
-
-inline AttrRenaming * XLR_AttrRenaming_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
-}
-
-inline AttrRenaming * XLR_AttrRenaming_1 (Token [], LRContext *, ErrInfo *, const Allocator *) {
-  return nullptr;
+  return attr;
 }
 
 inline Attributed * XLR_Attributed_0 (Token [], LRContext *, ErrInfo *, const Allocator *) {
